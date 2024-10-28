@@ -7,6 +7,8 @@ from app.db.base import get_db
 from app.storage.redis import get_redis
 from app.core.job.job_service import job_service
 from app.hepler.enum import OrderType, SortJobBy, JobType, SalaryType
+from app.model import Account
+from app.core.auth.user_manager_service import user_manager_service
 
 router = APIRouter()
 
@@ -15,6 +17,7 @@ router = APIRouter()
 async def search_job(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
+    current_user: Account = Depends(user_manager_service.get_current_user_optional),
     skip: int = Query(None, description="The number of users to skip.", example=0),
     limit: int = Query(None, description="The number of users to return.", example=100),
     sort_by: SortJobBy = Query(
@@ -74,13 +77,14 @@ async def search_job(
     """
     args = locals()
 
-    return await job_service.search_by_user(db, redis, {**args})
+    return await job_service.search_by_user(db, redis, {**args}, current_user)
 
 
 @router.get("", summary="Get list of job.")
 async def get_job(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
+    current_user: Account = Depends(user_manager_service.get_current_user_optional),
     skip: int = Query(None, description="The number of users to skip.", example=0),
     limit: int = Query(None, description="The number of users to return.", example=100),
     sort_by: SortJobBy = Query(
@@ -113,7 +117,7 @@ async def get_job(
     """
     args = locals()
 
-    return await job_service.get_by_user(db, redis, {**args})
+    return await job_service.get_by_user(db, redis, {**args}, current_user)
 
 
 @router.get("/count_job_by_category", summary="Count job by category.")
@@ -177,6 +181,7 @@ async def get_cruitment_demand(
 async def get_job_by_id(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
+    current_user: Account = Depends(user_manager_service.get_current_user_optional),
     job_id: int = Path(
         ...,
         description="The job id.",
@@ -197,4 +202,4 @@ async def get_job_by_id(
     - status_code (404): The job is not found.
 
     """
-    return await job_service.get_by_id_for_user(db, redis, job_id)
+    return await job_service.get_by_id_for_user(db, redis, job_id, current_user)

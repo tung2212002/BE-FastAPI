@@ -7,10 +7,15 @@ from app.schema.job import (
     JobItemResponseGeneral,
     JobSearchByUser,
 )
-from app.crud import job as jobCRUD, company as companyCRUD
+from app.schema.job import CVApplicationInfoResponse
+from app.crud import (
+    job as jobCRUD,
+    company as companyCRUD,
+    cv_applications as cv_applicationCRUD,
+)
 from app.core.working_times.working_times_helper import working_times_helper
 from app.storage.cache.job_cache_service import job_cache_service
-from app.model import Job
+from app.model import Job, Account, CVApplication
 from app.core.working_times.working_times_helper import working_times_helper
 from app.core.expericence.expericence_helper import experience_helper
 from app.core.job_position.job_position_hepler import job_position_helper
@@ -64,7 +69,9 @@ class JobHepler:
     ) -> Union[JobItemResponse, dict]:
         job_id = job.id
         try:
-            job_response = await job_cache_service.get_cache_job_info(redis, job_id)
+            job_response: JobItemResponse = await job_cache_service.get_cache_job_info(
+                redis, job_id
+            )
             if job_response:
                 return job_response
         except Exception as e:
@@ -135,6 +142,19 @@ class JobHepler:
         work_location_helper.create_with_job_id(db, job_id, locations)
         category_helper.create_with_job_id(db, job_id, categories)
         working_times_helper.create_with_job_id(db, job_id, working_times)
+
+    def get_info_with_cv_application(
+        self, db: Session, job: JobItemResponse, account: Account
+    ) -> JobItemResponse:
+        cv_application: CVApplication = (
+            cv_applicationCRUD.get_by_user_id_and_campaign_id(
+                db, account.id, job.campaign_id
+            )
+        )
+
+        if cv_application:
+            job.cv_application = CVApplicationInfoResponse(**cv_application.__dict__)
+        return job
 
 
 job_helper = JobHepler()

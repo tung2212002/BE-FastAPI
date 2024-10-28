@@ -69,8 +69,6 @@ class CVApplicationUpdateRequest(BaseModel):
 
 
 # schema
-
-
 class CVApplicationCreate(CVApplicationBase):
     campaign_id: int
     user_id: int
@@ -84,6 +82,18 @@ class CVApplicationUpdate(BaseModel):
     model_config = ConfigDict(from_attribute=True, extra="ignore")
 
 
+class CVApplicationUpdateInfo(BaseModel):
+    cv: str
+    status: CVApplicationStatus
+    full_name: str
+    email: str
+    phone_number: str
+    letter_cover: Optional[str] = None
+    count_apply: int
+
+    model_config = ConfigDict(from_attribute=True, extra="ignore")
+
+
 # response
 class CVApplicationUserItemResponse(CVApplicationBase):
     id: int
@@ -92,6 +102,7 @@ class CVApplicationUserItemResponse(CVApplicationBase):
     job: JobItemResponseGeneral
     company: CompanyItemGeneralResponse
     cv: str
+    count_apply: int
 
     @validator("cv")
     def validate_cv(cls, v):
@@ -104,6 +115,7 @@ class CVApplicationGeneralResponse(CVApplicationBase):
     created_at: datetime
     job: JobItemResponseGeneral
     cv: str
+    count_apply: int
 
     @validator("cv")
     def validate_cv(cls, v):

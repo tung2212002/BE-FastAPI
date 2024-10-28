@@ -23,9 +23,9 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
         skip=0,
         limit=10,
         sort_by: SortBy = SortBy.CREATED_AT,
-        order_by: OrderType = OrderType.DESC,
         user_id: int,
-        status: CVApplicationStatus
+        status: CVApplicationStatus,
+        **kwargs
     ) -> List[CVApplication]:
         query = db.query(self.model)
         if status:
@@ -35,11 +35,7 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
         else:
             query = query.filter(self.model.user_id == user_id)
         return (
-            query.order_by(
-                getattr(self.model, sort_by).desc()
-                if order_by == OrderType.DESC
-                else getattr(self.model, sort_by)
-            )
+            query.order_by(getattr(self.model, sort_by).desc())
             .offset(skip)
             .limit(limit)
             .all()

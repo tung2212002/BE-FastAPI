@@ -11,6 +11,7 @@ from app.hepler.enum import (
     SortByJob,
     OrderType,
     AdminJobApprovalStatus,
+    CVApplicationStatus,
 )
 from app.hepler.schema_validator import SchemaValidator
 from app.schema.skill import SkillItemResponse
@@ -369,6 +370,24 @@ class JobUpdate(BaseModel):
 
 
 # response
+class CVApplicationInfoResponse(BaseModel):
+    id: int
+    status: CVApplicationStatus
+    full_name: str
+    email: str
+    phone_number: str
+    letter_cover: Optional[str] = None
+    created_at: datetime
+    cv: str
+    count_apply: int
+
+    @validator("cv")
+    def validate_cv(cls, v):
+        return SchemaValidator.validate_cv_url(v)
+
+    model_config = ConfigDict(from_attribute=True, extra="ignore")
+
+
 class JobItemResponse(JobBase):
     id: int
     updated_at: Optional[datetime] = None
@@ -392,6 +411,7 @@ class JobItemResponse(JobBase):
     must_have_skills: List[object]
     should_have_skills: List[object]
     company: object
+    cv_application: Optional[CVApplicationInfoResponse] = None
 
     @validator("email_contact")
     def validate_email_contact(cls, v):

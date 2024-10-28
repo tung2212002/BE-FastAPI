@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from redis.asyncio import Redis
 from fastapi import status
+from typing import List
 
 from app.crud import (
     cv_applications as cv_applicationCRUD,
@@ -10,18 +11,21 @@ from app.crud import (
 from app.schema.cv_application import (
     CVApplicationCreate,
     CVApplicationUpdate,
+    CVApplicationUpdateInfo,
     CVApplicationCreateRequest,
     CVApplicationUpdateRequest,
     CVApplicationUserFilter,
     CVApplicationUserFilterCount,
+    CVApplicationUserItemResponse,
 )
 from app.common.exception import CustomException
-from app.model import Account
+from app.model import Account, CVApplication, Job
 from app.common.response import CustomResponse
 from app.storage.cache.cv_cache_service import cv_cache_service
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
 from app.storage.s3 import s3_service
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
+from app.hepler.enum import CVApplicationStatus
 
 
 class CVApplicationsService:
@@ -31,18 +35,18 @@ class CVApplicationsService:
         page = CVApplicationUserFilter(**data)
         count_page = CVApplicationUserFilterCount(**data)
 
-        count = cv_applicationCRUD.count_by_user_id(
+        count: int = cv_applicationCRUD.count_by_user_id(
             db, user_id=current_user.id, **count_page.model_dump()
         )
 
         if count < page.skip:
             return CustomResponse(data={"jobs": [], "count": count})
 
-        cv_applications = cv_applicationCRUD.get_by_user_id(
+        cv_applications: List[CVApplication] = cv_applicationCRUD.get_by_user_id(
             db, user_id=current_user.id, **page.model_dump()
         )
 
-        cv_applications_response = [
+        cv_applications_response: List[CVApplicationUserItemResponse] = [
             await cv_applications_helper.get_full_info(db, cv_application)
             for cv_application in cv_applications
         ]
@@ -52,7 +56,7 @@ class CVApplicationsService:
     async def get_by_id(
         self, db: Session, id: int, current_user: Account
     ) -> CustomResponse:
-        cv_application = cv_applicationCRUD.get(db, id)
+        cv_application: CVApplication = cv_applicationCRUD.get(db, id)
 
         if not cv_application:
             raise CustomException(
@@ -64,29 +68,36 @@ class CVApplicationsService:
                 status_code=status.HTTP_403_FORBIDDEN, msg="Forbidden"
             )
 
-        response = await cv_applications_helper.get_full_info(db, cv_application)
+        response: CVApplicationUserItemResponse = (
+            await cv_applications_helper.get_full_info(db, cv_application)
+        )
 
         return CustomResponse(data=response)
 
     async def create(
         self, db: Session, redis: Redis, data: dict, current_user: Account
     ) -> CustomResponse:
-        cv_applications_data = CVApplicationCreateRequest(**data)
+        cv_applications_data: CVApplicationCreateRequest = CVApplicationCreateRequest(
+            **data
+        )
 
-        job = cv_applications_helper.job_open(db, cv_applications_data.job_id)
+        job: Job = cv_applications_helper.job_open(db, cv_applications_data.job_id)
         if not job:
             raise CustomException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE, msg="Job is not open"
             )
 
-        cv_application = cv_applicationCRUD.get_by_user_id_and_campaign_id(
-            db, user_id=current_user.id, campaign_id=job.campaign.id
+        cv_application: CVApplication = (
+            cv_applicationCRUD.get_by_user_id_and_campaign_id(
+                db, user_id=current_user.id, campaign_id=job.campaign.id
+            )
         )
         if cv_application:
-            raise CustomException(
-                status_code=status.HTTP_409_CONFLICT,
-                msg="CV application already exists",
-            )
+            if cv_application.count_apply == 3:
+                raise CustomException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    msg="CV application is max apply",
+                )
 
         cv_file = cv_applications_data.cv
         if cv_file:
@@ -94,23 +105,39 @@ class CVApplicationsService:
             s3_service.upload_file(cv_file, key)
             cv_applications_data.cv = key
 
-        obj_in = CVApplicationCreate(
-            **cv_applications_data.__dict__,
-            user_id=current_user.id,
-            campaign_id=job.campaign.id,
-        )
-        cv_application = cv_applicationCRUD.create(db, obj_in=obj_in)
-        campaignCRUD.increase_count_apply(db, job.campaign)
-        userCRUD.increase_count_job_apply(db, current_user.user)
-
-        try:
-            await cv_cache_service.incr(
-                redis, f"{current_user.id}_{cv_application.status}"
+        if cv_application:
+            obj_in = CVApplicationUpdateInfo(
+                cv=cv_applications_data.cv,
+                letter_cover=cv_applications_data.letter_cover,
+                status=CVApplicationStatus.PENDING,
+                full_name=cv_applications_data.full_name,
+                email=cv_applications_data.email,
+                phone_number=cv_applications_data.phone_number,
+                count_apply=cv_application.count_apply + 1,
             )
-        except Exception as e:
-            print(e)
+            cv_application: CVApplication = cv_applicationCRUD.update(
+                db, db_obj=cv_application, obj_in=obj_in
+            )
+        else:
+            obj_in = CVApplicationCreate(
+                **cv_applications_data.__dict__,
+                user_id=current_user.id,
+                campaign_id=job.campaign.id,
+            )
+            cv_application: CVApplication = cv_applicationCRUD.create(db, obj_in=obj_in)
+            campaignCRUD.increase_count_apply(db, job.campaign)
+            userCRUD.increase_count_job_apply(db, current_user.user)
 
-        response = await cv_applications_helper.get_full_info(db, cv_application)
+            try:
+                await cv_cache_service.incr(
+                    redis, f"{current_user.id}_{cv_application.status}"
+                )
+            except Exception as e:
+                print(e)
+
+        response: CVApplicationUserItemResponse = (
+            await cv_applications_helper.get_full_info(db, cv_application)
+        )
 
         return CustomResponse(data=response)
 
@@ -138,7 +165,9 @@ class CVApplicationsService:
             obj_in=CVApplicationUpdate(**cv_application_data.model_dump()),
         )
 
-        response = await cv_applications_helper.get_full_info(db, cv_application)
+        response: CVApplicationUserItemResponse = (
+            await cv_applications_helper.get_full_info(db, cv_application)
+        )
 
         return CustomResponse(data=response)
 

@@ -96,7 +96,7 @@ class JobCacheService(BaseCache):
             redis,
             self.job_info_key + str(key),
             value,
-            expire_time,
+            expire_time > 0 and expire_time or 60 * 60 * 24 * 7,
         )
 
     async def get_cache_job_info(self, redis: Redis, key: int) -> JobItemResponse:
