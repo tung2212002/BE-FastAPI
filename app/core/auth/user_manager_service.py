@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from app.db.base import get_db
-from app.core.auth.jwt.auth_bearer import JWTBearer
+from app.core.auth.jwt.auth_bearer import JWTBearer, JWTBearerOptional
 from app.crud import (
     user as userCRUD,
     social_network as social_networkCRUD,
@@ -18,9 +18,23 @@ from app.core.auth.jwt.auth_handler import token_manager
 
 
 class UserManagerService:
+    def get_current_user_optional(
+        self, data: dict = Depends(JWTBearerOptional()), db: Session = Depends(get_db)
+    ) -> Account:
+        if data is None:
+            return None
+
+        try:
+            return self.get_account_from_data(data, db)
+        except CustomException:
+            return None
+
     def get_current_user(
         self, data: dict = Depends(JWTBearer()), db: Session = Depends(get_db)
     ) -> Account:
+        return self.get_account_from_data(data, db)
+
+    def get_account_from_data(self, data: dict, db: Session) -> Account:
         token_decode = data["payload"]
         if token_decode["type_account"] != TypeAccount.NORMAL:
             raise CustomException(

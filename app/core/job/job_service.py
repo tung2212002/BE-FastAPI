@@ -1,3 +1,4 @@
+from fastapi import status
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from redis.asyncio import Redis
@@ -12,6 +13,7 @@ from app.schema.job import (
     JobSearchByUser,
     JobSearchByBusiness,
     JobCount,
+    JobItemResponse,
 )
 from app.schema.job_approval_request import (
     JobApprovalRequestCreate,
@@ -23,6 +25,7 @@ from app.crud import (
     company as companyCRUD,
     job_approval_request as job_approval_requestCRUD,
     campaign as campaignCRUD,
+    cv_applications as cv_applicationCRUD,
 )
 from app.core import constant
 from app.hepler.enum import (
@@ -36,13 +39,13 @@ from app.hepler.enum import (
 from app.core.job_approval_requests import job_approval_request_helper
 from app.storage.cache.job_cache_service import job_cache_service
 from app.hepler.common import CommonHelper
-from app.model import Manager, Account, Business, Company
+from app.model import Manager, Account, Business, Company, Job, CVApplication
 from app.core.location.location_helper import location_helper
 from app.core.job.job_helper import job_helper
 from app.core.category.category_helper import category_helper
 from app.core.auth.business_auth_helper import business_auth_helper
 from app.core.campaign.campaign_helper import campaign_helper
-from fastapi import status
+from app.core.cv_applications.cv_applications_helper import cv_applications_helper
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
 
@@ -77,7 +80,9 @@ class JobService:
 
         return CustomResponse(data=response)
 
-    async def get_by_user(self, db: Session, redis: Redis, data: dict):
+    async def get_by_user(
+        self, db: Session, redis: Redis, data: dict, current_user: Account
+    ):
         page = JobFilterByUser(**data)
         page.job_status = JobStatus.PUBLISHED
         page.job_approve_status = JobApprovalStatus.APPROVED
@@ -94,26 +99,28 @@ class JobService:
 
         return CustomResponse(data=response)
 
-    async def search_by_user(self, db: Session, redis: Redis, data: dict):
+    async def search_by_user(
+        self, db: Session, redis: Redis, data: dict, current_user: Account
+    ):
         page = JobSearchByUser(**data)
         page.job_status = JobStatus.PUBLISHED
-        jobs_response = None
+        jobs = None
         count = 0
         jobs_of_district_response = []
 
         try:
-            jobs_response = await job_cache_service.get_cache_user_search(
+            jobs = await job_cache_service.get_cache_user_search(
                 redis, page.get_count_job_user_search_key()
             )
         except Exception as e:
             print(e)
 
-        if not jobs_response:
+        if not jobs:
             jobs = jobCRUD.user_search(db, **page.model_dump())
-            jobs_response = await job_helper.get_list_job_info(db, redis, jobs)
+            jobs = await job_helper.get_list_job_info(db, redis, jobs)
             try:
                 await job_cache_service.cache_user_search(
-                    redis, page.get_count_job_user_search_key(), jobs_response
+                    redis, page.get_count_job_user_search_key(), jobs
                 )
             except Exception as e:
                 print(e)
@@ -176,6 +183,14 @@ class JobService:
                     )
                 except Exception as e:
                     print(e)
+        jobs_response = []
+        if current_user:
+            for job in jobs:
+                jobs_response.append(
+                    job_helper.get_info_with_cv_application(db, job, current_user)
+                )
+        else:
+            jobs_response = jobs
 
         response = {
             "count": count,
@@ -261,8 +276,10 @@ class JobService:
 
         return CustomResponse(data=response)
 
-    async def get_by_id_for_user(self, db: Session, redis: Redis, job_id: int):
-        job = jobCRUD.get(db, job_id)
+    async def get_by_id_for_user(
+        self, db: Session, redis: Redis, job_id: int, current_user: Account
+    ):
+        job: Job = jobCRUD.get(db, job_id)
         if not job:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
@@ -276,7 +293,18 @@ class JobService:
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
             )
 
-        response = await job_helper.get_info(db, redis, job)
+        response: JobItemResponse = await job_helper.get_info(db, redis, job)
+
+        if current_user:
+            cv_application: CVApplication = (
+                cv_applicationCRUD.get_by_user_id_and_campaign_id(
+                    db, current_user.id, job.campaign_id
+                )
+            )
+            if cv_application:
+                response.cv_application = cv_applications_helper.get_info(
+                    db, cv_application
+                )
 
         return CustomResponse(data=response)
 
