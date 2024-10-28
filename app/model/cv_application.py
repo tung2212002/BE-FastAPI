@@ -25,10 +25,12 @@ class CVApplication(Base):
     phone_number = Column(String(10), nullable=False)
     letter_cover = Column(String(500), nullable=True)
     count_view = Column(Integer, default=0, nullable=False)
+    count_apply = Column(Integer, default=1, nullable=False)
     status = Column(
         Enum(CVApplicationStatus), default=CVApplicationStatus.PENDING, nullable=False
     )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     campaign = relationship(
         "Campaign",
