@@ -28,8 +28,6 @@ from app.schema.account import AccountBasicResponse
 from app.schema.conversation_member import ConversationMemberCreate
 from app.schema.message import MessageBasicResponse
 from app.common.exception import CustomException
-from app.core.user.user_helper import user_helper
-from app.core.business.business_helper import business_helper
 from app.core.company.company_helper import company_helper
 from app.hepler.enum import ConversationType, TypeAccount, Role
 from app.storage.cache.message_cache_service import message_cache_service
@@ -54,10 +52,12 @@ class ConversationHelper:
                 **account.__dict__,
                 nickname=conversation_member.nickname,
                 company=company_response,
+                email=account.manager.email,
             )
         return AccountBasicResponse(
             **account.__dict__,
             nickname=conversation_member.nickname,
+            email=account.user.email,
         )
 
     def get_private_conversation_response(
@@ -194,8 +194,14 @@ class ConversationHelper:
         db: Session,
         account: Account,
     ) -> AccountBasicResponse:
+        email: str = (
+            account.user.email
+            if account.type_account == TypeAccount.NORMAL
+            else account.manager.email
+        )
         return AccountBasicResponse(
             **account.__dict__,
+            email=email,
         )
 
     def get_user_basic_response(
@@ -213,10 +219,9 @@ class ConversationHelper:
             return AccountBasicResponse(
                 **account.__dict__,
                 company=company_response,
+                email=account.manager.email,
             )
-        return AccountBasicResponse(
-            **account.__dict__,
-        )
+        return AccountBasicResponse(**account.__dict__, email=account.user.email)
 
     def check_business_valid_contact(
         self, db: Session, members: List[Account], current_user: Account
