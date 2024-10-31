@@ -31,6 +31,7 @@ from app.common.exception import CustomException
 from app.core.company.company_helper import company_helper
 from app.hepler.enum import ConversationType, TypeAccount, Role
 from app.storage.cache.message_cache_service import message_cache_service
+from app.storage.cache.file_url_cache_service import file_url_cache_service
 
 
 class ConversationHelper:
@@ -306,6 +307,25 @@ class ConversationHelper:
             **message.__dict__,
             user=self.get_member_response(db, conversation_member, user),
         )
+
+    async def validate_attachments(
+        self,
+        redis: Redis,
+        attachments: List[str],
+        current_user_id: int,
+        conversation_id: int,
+    ) -> List[str]:
+        valid_attachment_list: List[str] = []
+        for attachment in attachments:
+            if not await file_url_cache_service.get_cache_file_url_message(
+                redis,
+                upload_filename=attachment,
+                user_id=current_user_id,
+                conversation_id=conversation_id,
+            ):
+                continue
+            valid_attachment_list.append(attachment)
+        return valid_attachment_list
 
 
 conversation_helper = ConversationHelper()

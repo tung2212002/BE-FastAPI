@@ -64,3 +64,7 @@ class CommonHelper:
             if key
             else f"{uuid.uuid4()}.{file_name.split('.')[-1]}"
         )
+
+    @staticmethod
+    def generate_public_id() -> str:
+        return str(uuid.uuid4())

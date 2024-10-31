@@ -254,7 +254,7 @@ class ConversationService:
         key = file.filename
         s3_service.upload_file(file, key)
         try:
-            await file_url_cache_service.cache_image_url_message(
+            await file_url_cache_service.cache_file_url_message(
                 redis,
                 user_id=current_user.id,
                 conversation_id=conversation.id,

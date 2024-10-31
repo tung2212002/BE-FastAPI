@@ -44,6 +44,7 @@ from app.crud import (
     account as accountCRUD,
 )
 from app.core.conversation.conversation_helper import conversation_helper
+from app.core.message.message_helper import message_helper
 from app.hepler.enum import WebsocketActionType, TypeAccount, MessageType
 from app.common.exception import CustomException
 from app.core.websocket.websocket_helper import websocket_helper
@@ -71,14 +72,32 @@ class WebsocketHandler:
         try:
             new_message_data: NewMessageSchema = NewMessageSchema(**incoming_message)
         except ValueError as e:
+            print(e)
             await self.websocket_manager.send_error(
                 websocket, "Invalid message format."
             )
             return
 
         conversation_id: int = new_message_data.conversation_id
+        message_type: MessageType = new_message_data.type
+        is_new_conversation: bool = not conversation_id
 
-        if not conversation_id:
+        if message_type in [MessageType.FILE, MessageType.IMAGE]:
+            valid_attachment_list: List[str] = (
+                await conversation_helper.validate_attachments(
+                    redis,
+                    new_message_data.attachments,
+                    current_user.id,
+                    conversation_id,
+                )
+            )
+            if len(valid_attachment_list) == 0:
+                await self.websocket_manager.send_error(
+                    websocket, "Attachments is invalid."
+                )
+                return
+
+        if is_new_conversation:
             if not new_message_data.members:
                 await self.websocket_manager.send_error(
                     websocket, "Conversation id or members is required."
@@ -116,8 +135,10 @@ class WebsocketHandler:
             conversation_id = response_conversation.id
 
         else:
-            is_valid_conversation = await conversation_helper.is_join_conversation(
-                db, redis, conversation_id, current_user.id
+            is_valid_conversation: bool = (
+                await conversation_helper.is_join_conversation(
+                    db, redis, conversation_id, current_user.id
+                )
             )
             if not is_valid_conversation:
                 await self.websocket_manager.send_error(
@@ -125,16 +146,53 @@ class WebsocketHandler:
                     f"Conversation {conversation_id} not found in your conversations.",
                 )
                 return
-        type = new_message_data.type
+
+            if new_message_data.parent_id:
+                is_valid_parent_message: bool = (
+                    await message_helper.check_parent_message(
+                        db, redis, new_message_data.parent_id, conversation_id
+                    )
+                )
+                if not is_valid_parent_message:
+                    await self.websocket_manager.send_error(
+                        websocket,
+                        f"Parent message {new_message_data.parent_id} not found in conversation {conversation_id}.",
+                    )
+                    return
+
+        type = message_type
+        outcoming_message: Union[ResponseMessageSchema, None] = None
         if type == MessageType.TEXT:
             outcoming_message: ResponseMessageSchema = (
                 await websocket_helper.create_text_message(
                     db, redis, current_user, conversation_id, new_message_data
                 )
             )
-            await websocket_manager.broadcast(
-                conversation_id, outcoming_message.model_dump_json()
+        elif type == MessageType.IMAGE:
+            if new_message_data.content:
+                outcoming_message: ResponseMessageSchema = (
+                    await websocket_helper.create_text_message(
+                        db, redis, current_user, conversation_id, new_message_data
+                    )
+                )
+                await websocket_manager.broadcast(
+                    conversation_id, outcoming_message.model_dump_json()
+                )
+
+            outcoming_message: ResponseMessageSchema = (
+                await websocket_helper.create_image_message(
+                    db,
+                    redis,
+                    current_user,
+                    conversation_id,
+                    new_message_data,
+                    is_new_conversation,
+                )
             )
+
+        await websocket_manager.broadcast(
+            conversation_id, outcoming_message.model_dump_json()
+        )
 
     async def user_typing_handler(
         self,

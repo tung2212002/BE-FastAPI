@@ -15,7 +15,7 @@ from app.schema.company import CompanyItemGeneralResponse
 class GetMessagesRequest(BaseModel):
     conversation_id: int
     limit: Optional[int] = Field(10, ge=1, le=20)
-    skip: int = Field(0, ge=0)
+    skip: Optional[int] = Field(0, ge=0)
 
     @validator("limit")
     def validate_limit(cls, v):
@@ -40,7 +40,7 @@ class MessageCreate(BaseModel):
     conversation_id: int
     account_id: int
     type: MessageType = MessageType.TEXT
-    content: str
+    content: Optional[str] = None
     parent_id: Optional[int] = None
 
     model_config = ConfigDict(from_attribute=True, extra="ignore")
@@ -52,7 +52,7 @@ class MessageResponse(BaseModel):
     conversation_id: int
     account_id: int
     type: MessageType
-    content: str
+    content: Optional[str] = None
     parent_id: Optional[int] = None
     like_count: int
     dislike_count: int
@@ -61,7 +61,7 @@ class MessageResponse(BaseModel):
     deleted_at: Optional[datetime] = None
     user: AccountBasicResponse
     parent: Optional[dict] = None
-    atttachments: Optional[List[AttachmentResponse]] = None
+    attachments: Optional[List[AttachmentResponse]] = None
     is_pinned: bool
     reaction: Optional[MessageReactionResponse] = None
 
@@ -73,7 +73,7 @@ class MessageBasicResponse(BaseModel):
     conversation_id: int
     account_id: int
     type: MessageType
-    content: str
+    content: Optional[str] = None
     parent_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None

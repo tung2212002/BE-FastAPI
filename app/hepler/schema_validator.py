@@ -13,6 +13,7 @@ from app.hepler.enum import (
     SortByJob,
     OrderType,
     AdminJobApprovalStatus,
+    MessageType,
 )
 from app.hepler.common import CommonHelper
 
@@ -331,4 +332,16 @@ class SchemaValidator:
         v = list(set(v))
         if len(v) < 1:
             raise ValueError("Invalid list member")
+        return v
+
+    @staticmethod
+    def validate_message_type_and_data(v, values):
+        if v == MessageType.TEXT and (
+            "content" not in values or len(values["content"]) == 0
+        ):
+            raise ValueError("Content is required")
+        elif (v == MessageType.IMAGE or v == MessageType.FILE) and (
+            "attachments" not in values or len(values["attachments"]) == 0
+        ):
+            raise ValueError("attachments is required")
         return v

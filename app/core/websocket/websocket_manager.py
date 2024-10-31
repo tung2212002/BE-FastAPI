@@ -54,9 +54,6 @@ class WebsocketManager:
     async def broadcast(self, conversation_id: int, message: str | dict) -> None:
         if isinstance(message, dict):
             message = json.dumps(message)
-        print(f"Broadcasting to {conversation_id}: {message}")
-        print(self.conversations)
-        print(self.user_id_to_websocket)
         await self.pubsub.publish(conversation_id, message)
 
     async def listen(self, pubsub_subscribe: Redis) -> None:

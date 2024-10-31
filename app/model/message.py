@@ -22,8 +22,9 @@ class Message(Base):
     type = Column(
         Enum(MessageType), nullable=False, default=MessageType.TEXT, index=True
     )
-    content = Column(String(255), nullable=False)
+    content = Column(String(255), nullable=True)
     is_pinned = Column(Integer, default=0, nullable=False)
+    is_deleted = Column(Integer, default=0, nullable=False)
     parent_id = Column(Integer, ForeignKey("message.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

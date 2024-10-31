@@ -16,7 +16,7 @@ class CRUDMessageImage:
 
     def create(self, db: Session, obj_in: MessageImageCreate) -> MessageImage:
         db_obj = MessageImage(
-            message_id=obj_in.message_id, image=obj_in.url, position=obj_in.position
+            message_id=obj_in.message_id, url=obj_in.url, position=obj_in.position
         )
         db.add(db_obj)
         db.commit()

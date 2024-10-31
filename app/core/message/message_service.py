@@ -66,6 +66,7 @@ class MessageService:
             if message.parent_id:
                 parent_message = messageCRUD.get(db, message.parent_id)
 
+            images: MessageImage = []
             if message.type == MessageType.IMAGE:
                 images = message_imageCRUD.get_by_message_id(db, message_id=message.id)
 
@@ -75,7 +76,13 @@ class MessageService:
                     user=user,
                     parent=parent_message.__dict__ if parent_message else None,
                     attachments=[
-                        MessageImageResponse(**image.__dict__) for image in images
+                        AttachmentResponse(
+                            upload_filename=image.url,
+                            position=image.position,
+                            id=image.id,
+                            url=image.url,
+                        )
+                        for image in images
                     ],
                     reaction=(
                         MessageReactionResponse(**reaction.__dict__)
