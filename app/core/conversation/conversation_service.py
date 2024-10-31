@@ -85,7 +85,6 @@ class ConversationService:
         member_ids: List[int] = conversation_helper.filter_member(
             conversation_data.members, current_user
         )
-
         conversation_id: int = conversation_memberCRUD.get_by_account_ids(
             db, [current_user.id] + member_ids
         )
@@ -255,13 +254,16 @@ class ConversationService:
         key = file.filename
         s3_service.upload_file(file, key)
         try:
-            file_url_cache_service.cache_image_url_message(
-                redis, user_id=current_user.id, conversation_id=conversation.id, key=key
+            await file_url_cache_service.cache_image_url_message(
+                redis,
+                user_id=current_user.id,
+                conversation_id=conversation.id,
+                upload_filename=key,
             )
         except Exception as e:
             print(e)
 
-        return CustomResponse(data=AttachmentResponse(upload_filename=key))
+        return CustomResponse(data=AttachmentResponse(upload_filename=key, url=key))
 
 
 conversation_service = ConversationService()

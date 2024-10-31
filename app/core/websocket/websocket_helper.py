@@ -167,5 +167,38 @@ class WebsocketHelper:
 
             return outcoming_message
 
+    async def create_attachment_message(
+        self,
+        db: Session,
+        redis: Redis,
+        current_user: Account,
+        conversation_id: int,
+        message_data: NewMessageSchema,
+    ) -> ResponseMessageSchema:
+        if not message_data.parent_id:
+            content: str = message_data.content
+            message = MessageCreate(
+                conversation_id=conversation_id,
+                account_id=current_user.id,
+                content=content,
+            )
+            if message_data.attachments:
+                pass
+
+            message = messageCRUD.create(db, obj_in=message)
+            user: AccountBasicResponse = conversation_helper.get_user_basic_response(
+                db, current_user
+            )
+            outcoming_message = ResponseMessageSchema(
+                id=message.id,
+                conversation_id=message.conversation_id,
+                account_id=message.account_id,
+                content=message.content,
+                created_at=message.created_at,
+                user=user,
+            )
+
+            return outcoming_message
+
 
 websocket_helper = WebsocketHelper()

@@ -44,9 +44,6 @@ class CRUDConversationMember(
             .having(subquery == num_users)
             .limit(1)
         )
-        print(query)
-        print(num_users)
-        print(account_ids)
 
         return query.scalar()
 
