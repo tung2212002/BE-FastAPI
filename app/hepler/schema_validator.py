@@ -14,6 +14,7 @@ from app.hepler.enum import (
     OrderType,
     AdminJobApprovalStatus,
     MessageType,
+    CreateMessageType,
 )
 from app.hepler.common import CommonHelper
 
@@ -104,10 +105,16 @@ class SchemaValidator:
     def validate_files(v: List[UploadFile]):
         if v is not None:
             for file in v:
-                if file.content_type not in constant.ALLOWED_IMAGE_TYPES:
+                if file.content_type not in constant.ALLOWED_FILE_TYPES:
                     raise ValueError("Invalid file type")
-                elif file.size > constant.MAX_IMAGE_SIZE:
-                    raise ValueError("File size must be at most 2MB")
+                # elif file.size > constant.MAX_IMAGE_SIZE:
+                #     raise ValueError("File size must be at most 2MB")
+                if file.content_type in constant.ALLOWED_IMAGE_TYPES:
+                    if file.size > constant.MAX_IMAGE_SIZE:
+                        raise ValueError("Image size must be at most 2MB")
+                else:
+                    if file.size > constant.MAX_FILE_SIZE:
+                        raise ValueError("File size must be at most 5MB")
                 file.filename = CommonHelper.generate_file_name(
                     FolderBucket.ATTACHMENT, file.filename
                 )
@@ -336,11 +343,11 @@ class SchemaValidator:
 
     @staticmethod
     def validate_message_type_and_data(v, values):
-        if v == MessageType.TEXT and (
+        if v == CreateMessageType.TEXT and (
             "content" not in values or len(values["content"]) == 0
         ):
             raise ValueError("Content is required")
-        elif (v == MessageType.IMAGE or v == MessageType.FILE) and (
+        elif (v == CreateMessageType.ATTACHMENT) and (
             "attachments" not in values or len(values["attachments"]) == 0
         ):
             raise ValueError("attachments is required")

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple
 from fastapi import status
 
 from app.core.websocket.websocket_manager import WebsocketManager
-from app.model import Account, MessageImage
+from app.model import Account, MessageAttachment
 from app.core.conversation.conversation_helper import conversation_helper
 from app.core.message.message_helper import message_helper
 from app.common.exception import CustomException
@@ -14,12 +14,12 @@ from app.crud import (
     message as messageCRUD,
     conversation as conversationCRUD,
     conversation_member as conversation_memberCRUD,
-    message_image as message_imageCRUD,
+    message_attachment as message_attachmentCRUD,
 )
 from app.schema.conversation import ConversationResponse
 from app.hepler.enum import TypeAccount
 from app.schema.message import MessageCreate
-from app.schema.message_image import MessageImageCreate
+from app.schema.message_attachment import MessageAttachmentCreate
 from app.schema.websocket import (
     NewMessageSchema,
     ResponseMessageSchema,
@@ -174,7 +174,7 @@ class WebsocketHelper:
 
             return outcoming_message
 
-    async def create_image_message(
+    async def create_attach_message(
         self,
         db: Session,
         redis: Redis,
@@ -183,6 +183,9 @@ class WebsocketHelper:
         message_data: NewMessageSchema,
         is_new_conversation: bool,
     ) -> ResponseMessageSchema:
+        attachments: List[str] = message_data.attachments
+        attachment_images: List[str] = file
+
         message = MessageCreate(
             conversation_id=conversation_id,
             account_id=current_user.id,
@@ -194,18 +197,18 @@ class WebsocketHelper:
         attachments_response: List[AttachmentResponse] = []
 
         for index, attachment in enumerate(message_data.attachments):
-            message_image = MessageImageCreate(
+            message_attachment = MessageAttachmentCreate(
                 message_id=message.id,
                 url=attachment,
                 position=index,
             )
-            message_image: MessageImage = message_imageCRUD.create(
-                db, obj_in=message_image
+            message_attachment: MessageAttachment = message_attachmentCRUD.create(
+                db, obj_in=message_attachment
             )
             attachment_response = AttachmentResponse(
                 upload_filename=attachment,
-                position=message_image.position,
-                id=message_image.id,
+                position=message_attachment.position,
+                id=message_attachment.id,
             )
             attachments_response.append(attachment_response)
 

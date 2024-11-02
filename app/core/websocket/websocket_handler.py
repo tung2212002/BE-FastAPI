@@ -6,7 +6,7 @@ from typing import List, Union
 from app.core.websocket.websocket_manager import WebsocketManager
 from app.model import (
     Message,
-    MessageImage,
+    MessageAttachment,
     MessageReaction,
     PinnedMessage,
     ConversationMember,
@@ -23,7 +23,7 @@ from app.schema.websocket import (
 )
 from app.schema.account import AccountBasicResponse
 from app.schema.message import MessageCreate, MessageUpdate
-from app.schema.message_image import MessageImageCreate
+from app.schema.message_attachment import MessageAttachmentCreate
 from app.schema.message_reaction import MessageReactionCreate
 from app.schema.pinned_message import PinnedMessageCreate
 from app.schema.conversation_member import ConversationMemberCreate
@@ -36,7 +36,7 @@ from app.schema.user import UserBasicResponse
 from app.schema.business import BusinessBasicInfoResponse
 from app.crud import (
     message as messageCRUD,
-    message_image as message_imageCRUD,
+    message_attachment as message_attachmentCRUD,
     message_reaction as message_reactionCRUD,
     pinned_message as pinned_messageCRUD,
     conversation_member as conversation_memberCRUD,
@@ -45,7 +45,7 @@ from app.crud import (
 )
 from app.core.conversation.conversation_helper import conversation_helper
 from app.core.message.message_helper import message_helper
-from app.hepler.enum import WebsocketActionType, TypeAccount, MessageType
+from app.hepler.enum import WebsocketActionType, TypeAccount, CreateMessageType
 from app.common.exception import CustomException
 from app.core.websocket.websocket_helper import websocket_helper
 from app.storage.cache.message_cache_service import message_cache_service
@@ -79,10 +79,10 @@ class WebsocketHandler:
             return
 
         conversation_id: int = new_message_data.conversation_id
-        message_type: MessageType = new_message_data.type
+        message_type: CreateMessageType = new_message_data.type
         is_new_conversation: bool = not conversation_id
 
-        if message_type in [MessageType.FILE, MessageType.IMAGE]:
+        if message_type == CreateMessageType.ATTACHMENT:
             valid_attachment_list: List[str] = (
                 await conversation_helper.validate_attachments(
                     redis,
@@ -162,13 +162,13 @@ class WebsocketHandler:
 
         type = message_type
         outcoming_message: Union[ResponseMessageSchema, None] = None
-        if type == MessageType.TEXT:
+        if type == CreateMessageType.TEXT:
             outcoming_message: ResponseMessageSchema = (
                 await websocket_helper.create_text_message(
                     db, redis, current_user, conversation_id, new_message_data
                 )
             )
-        elif type == MessageType.IMAGE:
+        elif type == CreateMessageType.ATTACHMENT:
             if new_message_data.content:
                 outcoming_message: ResponseMessageSchema = (
                     await websocket_helper.create_text_message(
@@ -180,7 +180,7 @@ class WebsocketHandler:
                 )
 
             outcoming_message: ResponseMessageSchema = (
-                await websocket_helper.create_image_message(
+                await websocket_helper.create_attach_message(
                     db,
                     redis,
                     current_user,

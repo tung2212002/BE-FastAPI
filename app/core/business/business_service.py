@@ -1,3 +1,4 @@
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from app.crud import (
@@ -6,12 +7,11 @@ from app.crud import (
     account as accountCRUD,
 )
 from app.core.auth.jwt.auth_handler import token_manager
-from app.storage.s3 import s3_service
 from app.core.business.business_helper import business_helper
 from app.core.admin.admin_helper import admin_helper
 from app.core.location.location_helper import location_helper
+from app.core.file.file_helper import file_helper
 from app.model import Account
-from fastapi import status
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
 from app.schema.business import (
@@ -24,6 +24,7 @@ from app.schema.business import (
 from app.schema.page import Pagination
 from app.schema.account import AccountCreate, AccountUpdate
 from app.schema.manager import ManagerCreate, ManagerUpdate
+from app.schema.file import FileInfo
 
 
 class BusinessService:
@@ -89,9 +90,8 @@ class BusinessService:
 
         avatar = business_data.avatar
         if avatar:
-            key = avatar.filename
-            s3_service.upload_file(avatar, key)
-            business_data.avatar = key
+            file_info: FileInfo = await file_helper.upload_file(avatar)
+            business_data.avatar = file_info.name
 
         account = accountCRUD.create(
             db, obj_in=AccountCreate(**business_data.model_dump())
@@ -127,9 +127,8 @@ class BusinessService:
 
         avatar = business_data.avatar
         if avatar:
-            key = avatar.filename
-            s3_service.upload_file(avatar, key)
-            business_data.avatar = key
+            file_info: FileInfo = await file_helper.upload_file(avatar)
+            business_data.avatar = file_info.name
 
         account = accountCRUD.update(
             db=db,

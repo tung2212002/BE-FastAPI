@@ -187,20 +187,62 @@ class ConversationType(str, Enum):
     GROUP = "group"
 
 
+class AttachmentType(str, Enum):
+    DOC = "application/msword"
+    DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    PDF = "application/pdf"
+    JPG = "image/jpg"
+    JPEG = "image/jpeg"
+    PNG = "image/png"
+    SVG = "image/svg+xml"
+
+
+class ImageExtension(str, Enum):
+    JPG = "jpg"
+    JPEG = "jpeg"
+    PNG = "png"
+    SVG = "svg"
+
+
+class DocumentExtension(str, Enum):
+    DOC = "doc"
+    DOCX = "docx"
+    PDF = "pdf"
+
+
+class ImageType(str, Enum):
+    JPG = "image/jpg"
+    JPEG = "image/jpeg"
+    PNG = "image/png"
+    SVG = "image/svg+xml"
+
+
+class DocumentType(str, Enum):
+    DOC = "application/msword"
+    DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    PDF = "application/pdf"
+
+
+class CreateMessageType(str, Enum):
+    TEXT = "text"
+    ATTACHMENT = "attachment"
+
+
 class MessageType(str, Enum):
     TEXT = "text"
     IMAGE = "image"
     FILE = "file"
-    VIDEO = "video"
-    AUDIO = "audio"
-    STICKER = "sticker"
-    MEDIA = "media"
     ADD_MEMBER = "add_member"
     REMOVE_MEMBER = "remove_member"
     LEAVE_GROUP = "leave_group"
     CREATE_GROUP = "create_group"
     RENAME_GROUP = "rename_group"
     CHANGE_AVATAR = "change_avatar"
+
+
+class FileType(str, Enum):
+    IMAGE = "image"
+    FILE = "file"
 
 
 class ReactionType(str, Enum):

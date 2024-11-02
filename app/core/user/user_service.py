@@ -11,9 +11,10 @@ from app.schema.user import (
 )
 from app.schema.account import AccountCreate, AccountUpdate
 from app.schema.page import Pagination
+from app.schema.file import FileInfo
 from app.core.auth.jwt.auth_handler import token_manager
 from app.core.user.user_helper import user_helper
-from app.storage.s3 import s3_service
+from app.core.file.file_helper import file_helper
 from app.model import Account
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
@@ -77,9 +78,8 @@ class UserService:
             )
         avatar = user_data.avatar
         if avatar:
-            key = avatar.filename
-            s3_service.upload_file(avatar, key)
-            user_data.avatar = key
+            file_info: FileInfo = await file_helper.upload_file(avatar)
+            user_data.avatar = file_info.name
 
         account = accountCRUD.create(db, obj_in=AccountCreate(**user_data.model_dump()))
         user = userCRUD.create(
@@ -106,9 +106,8 @@ class UserService:
 
         avatar = user_data.avatar
         if avatar:
-            key = avatar.filename
-            s3_service.upload_file(avatar, key)
-            user_data.avatar = key
+            file_info: FileInfo = await file_helper.upload_file(avatar)
+            user_data.avatar = file_info.name
 
         account_data = AccountUpdate(**user_data.model_dump())
         account = accountCRUD.update(db, obj_in=account_data, db_obj=current_user)

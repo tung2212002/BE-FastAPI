@@ -7,7 +7,7 @@ from app.hepler.enum import MessageType
 from app.schema.message_reaction import MessageReactionResponse
 from app.schema.user import UserBasicResponse
 from app.schema.account import AccountBasicResponse
-from app.schema.message_image import AttachmentResponse
+from app.schema.message_attachment import AttachmentResponse
 from app.schema.company import CompanyItemGeneralResponse
 
 

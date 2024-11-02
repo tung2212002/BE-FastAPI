@@ -41,7 +41,7 @@ class Message(Base):
     )
     childrens = relationship("Message", back_populates="parent", passive_deletes=True)
     reactions = relationship("MessageReaction", back_populates="message")
-    images = relationship("MessageImage", back_populates="message")
+    attachments = relationship("MessageAttachment", back_populates="message")
     pinned_message = relationship(
         "PinnedMessage", back_populates="message", uselist=False
     )

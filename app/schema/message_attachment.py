@@ -25,7 +25,7 @@ class AttachmentCreateRequest(BaseModel):
 
 
 # schema
-class MessageImageCreate(BaseModel):
+class MessageAttachmentCreate(BaseModel):
     message_id: int
     url: str
     position: int
@@ -34,7 +34,7 @@ class MessageImageCreate(BaseModel):
 
 
 # response
-class MessageImageResponse(BaseModel):
+class MessageAttachmentResponse(BaseModel):
     id: int
     message_id: int
     url: str

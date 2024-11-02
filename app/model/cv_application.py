@@ -3,7 +3,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
-from app.hepler.enum import CVApplicationStatus
+from app.hepler.enum import CVApplicationStatus, AttachmentType
 
 
 class CVApplication(Base):
@@ -20,6 +20,9 @@ class CVApplication(Base):
         index=True,
     )
     cv = Column(String(255), nullable=False)
+    type = Column(Enum(AttachmentType), nullable=False)
+    name = Column(String(255), nullable=False)
+    size = Column(Integer, nullable=False)
     full_name = Column(String(50), nullable=False)
     email = Column(String(50), nullable=False)
     phone_number = Column(String(10), nullable=False)

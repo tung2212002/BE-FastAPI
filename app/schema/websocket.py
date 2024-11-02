@@ -3,12 +3,10 @@ from typing import List, Union, Optional
 from datetime import datetime
 
 from app.hepler.enum import WebsocketActionType
-from app.schema.user import UserBasicResponse
-from app.schema.business import BusinessBasicInfoResponse
-from app.hepler.enum import MessageType, ConversationType
+from app.hepler.enum import MessageType, ConversationType, CreateMessageType
 from app.schema.account import AccountBasicResponse
 from app.schema.message_reaction import MessageReactionResponse
-from app.schema.message_image import AttachmentResponse
+from app.schema.message_attachment import AttachmentResponse
 from app.hepler.schema_validator import SchemaValidator
 
 
@@ -22,7 +20,7 @@ class NewMessageSchema(BaseSchema):
     conversation_id: int = None
     parent_id: int = None
     attachments: List[str] = []
-    type: MessageType = MessageType.TEXT
+    type: CreateMessageType = CreateMessageType.TEXT
 
     @validator("conversation_id")
     def contain_members_or_conversation(cls, v, values):
