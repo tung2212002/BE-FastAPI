@@ -15,7 +15,7 @@ class BaseSchema(BaseModel):
 
 
 class NewMessageSchema(BaseSchema):
-    content: str = Field(..., max_length=255)
+    content: Optional[str] = Field(None, max_length=255)
     members: List[int] = []
     conversation_id: int = None
     parent_id: int = None
@@ -47,7 +47,7 @@ class ResponseMessageSchema(BaseSchema):
     parent_id: Optional[int] = None
     parent: Optional[dict] = None
     reaction: Optional[MessageReactionResponse] = None
-    atttachments: Optional[List[AttachmentResponse]] = None
+    attachments: Optional[List[AttachmentResponse]] = None
     user: AccountBasicResponse
 
 

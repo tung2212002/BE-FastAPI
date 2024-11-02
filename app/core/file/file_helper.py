@@ -2,7 +2,7 @@ from fastapi import UploadFile
 from typing import List, Tuple
 
 from app.storage.s3 import s3_service
-from app.hepler.enum import AttachmentType, ImageExtension, DocumentExtension
+from app.hepler.enum import AttachmentType, ImageType
 from app.schema.file import FileInfo
 
 
@@ -23,11 +23,11 @@ class FileHelper:
     async def get_file(self, key: str) -> bytes:
         return await s3_service.get_file(key)
 
-    def get_list_image(sefl, attachments: List[str]) -> List[str]:
+    def filter_images(sefl, attachments: List[FileInfo]) -> List[FileInfo]:
         return [
             attachment
             for attachment in attachments
-            if attachment.endswith(Tuple(format for format in ImageExtension))
+            if attachment.type in ImageType.__members__.values()
         ]
 
 

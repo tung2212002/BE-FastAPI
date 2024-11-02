@@ -260,9 +260,7 @@ class ConversationService:
         except Exception as e:
             print(e)
 
-        return CustomResponse(
-            data=AttachmentResponse(upload_filename=file_info.name, url=file_info.url)
-        )
+        return CustomResponse(data=AttachmentResponse(**file_info.model_dump()))
 
 
 conversation_service = ConversationService()

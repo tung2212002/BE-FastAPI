@@ -34,6 +34,7 @@ from app.schema.conversation import (
 )
 from app.schema.user import UserBasicResponse
 from app.schema.business import BusinessBasicInfoResponse
+from app.schema.file import FileInfo
 from app.crud import (
     message as messageCRUD,
     message_attachment as message_attachmentCRUD,
@@ -81,15 +82,14 @@ class WebsocketHandler:
         conversation_id: int = new_message_data.conversation_id
         message_type: CreateMessageType = new_message_data.type
         is_new_conversation: bool = not conversation_id
+        valid_attachment_list: List[FileInfo] = []
 
         if message_type == CreateMessageType.ATTACHMENT:
-            valid_attachment_list: List[str] = (
-                await conversation_helper.validate_attachments(
-                    redis,
-                    new_message_data.attachments,
-                    current_user.id,
-                    conversation_id,
-                )
+            valid_attachment_list = await conversation_helper.validate_attachments(
+                redis,
+                new_message_data.attachments,
+                current_user.id,
+                conversation_id,
             )
             if len(valid_attachment_list) == 0:
                 await self.websocket_manager.send_error(
@@ -108,7 +108,7 @@ class WebsocketHandler:
                 new_message_data.members, current_user
             )
 
-            response_conversation, members = await websocket_helper.new_conversation(
+            outcoming_message, members = await websocket_helper.new_conversation(
                 db, redis, websocket, current_user, member_ids, websocket_manager
             )
             user_id_to_websocket: dict = websocket_manager.user_id_to_websocket
@@ -117,22 +117,13 @@ class WebsocketHandler:
                 if websockets:
                     for ws in websockets:
                         await websocket_manager.add_conversation(
-                            response_conversation.id, ws
+                            outcoming_message.id, ws
                         )
 
-            outcoming_message: NewConversationSchema = NewConversationSchema(
-                id=response_conversation.id,
-                name=response_conversation.name,
-                avatar=response_conversation.avatar,
-                members=response_conversation.members,
-                created_at=response_conversation.created_at,
-                conversation_type=response_conversation.type,
+            await websocket_helper.broadcast(
+                websocket_manager, outcoming_message.id, outcoming_message
             )
-
-            await websocket_manager.broadcast(
-                response_conversation.id, outcoming_message.model_dump_json()
-            )
-            conversation_id = response_conversation.id
+            conversation_id = outcoming_message.id
 
         else:
             is_valid_conversation: bool = (
@@ -168,6 +159,11 @@ class WebsocketHandler:
                     db, redis, current_user, conversation_id, new_message_data
                 )
             )
+
+            await websocket_helper.broadcast(
+                websocket_manager, conversation_id, outcoming_message
+            )
+
         elif type == CreateMessageType.ATTACHMENT:
             if new_message_data.content:
                 outcoming_message: ResponseMessageSchema = (
@@ -175,24 +171,26 @@ class WebsocketHandler:
                         db, redis, current_user, conversation_id, new_message_data
                     )
                 )
-                await websocket_manager.broadcast(
-                    conversation_id, outcoming_message.model_dump_json()
+                await websocket_helper.broadcast(
+                    websocket_manager, conversation_id, outcoming_message
                 )
 
-            outcoming_message: ResponseMessageSchema = (
-                await websocket_helper.create_attach_message(
+            outcoming_messages: List[ResponseMessageSchema] = (
+                await websocket_helper.create_attachment_message(
                     db,
                     redis,
                     current_user,
                     conversation_id,
                     new_message_data,
+                    valid_attachment_list,
                     is_new_conversation,
                 )
             )
 
-        await websocket_manager.broadcast(
-            conversation_id, outcoming_message.model_dump_json()
-        )
+            for outcoming_message in outcoming_messages:
+                await websocket_helper.broadcast(
+                    websocket_manager, conversation_id, outcoming_message
+                )
 
     async def user_typing_handler(
         self,
@@ -216,8 +214,8 @@ class WebsocketHandler:
             )
             return
 
-        await websocket_manager.broadcast(
-            conversation_id, user_typing_data.model_dump_json()
+        await websocket_helper.broadcast(
+            websocket_manager, conversation_id, user_typing_data
         )
 
     async def add_user_to_conversation_handler(

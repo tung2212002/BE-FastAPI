@@ -27,6 +27,7 @@ from app.schema.company import CompanyItemGeneralResponse
 from app.schema.account import AccountBasicResponse
 from app.schema.conversation_member import ConversationMemberCreate
 from app.schema.message import MessageBasicResponse
+from app.schema.file import FileInfo
 from app.common.exception import CustomException
 from app.core.company.company_helper import company_helper
 from app.hepler.enum import ConversationType, TypeAccount, Role
@@ -153,7 +154,7 @@ class ConversationHelper:
             self.get_user_response(db, member) for member in all_members
         ]
 
-        new_conversation = self.create_conversation(
+        new_conversation: Conversation = self.create_conversation(
             db,
             current_user,
             ConversationCreate(
@@ -187,7 +188,7 @@ class ConversationHelper:
 
     def create_conversation(
         self, db: Session, current_user: Account, conversation_data: ConversationCreate
-    ) -> ConversationResponse:
+    ) -> Conversation:
         return conversationCRUD.create(db, obj_in=conversation_data)
 
     def get_user_response(
@@ -314,17 +315,20 @@ class ConversationHelper:
         attachments: List[str],
         current_user_id: int,
         conversation_id: int,
-    ) -> List[str]:
-        valid_attachment_list: List[str] = []
+    ) -> List[FileInfo]:
+        valid_attachment_list: List[FileInfo] = []
         for attachment in attachments:
-            if not await file_url_cache_service.get_cache_file_url_message(
-                redis,
-                upload_filename=attachment,
-                user_id=current_user_id,
-                conversation_id=conversation_id,
-            ):
-                continue
-            valid_attachment_list.append(attachment)
+            file_info: FileInfo = (
+                await file_url_cache_service.get_cache_file_url_message(
+                    redis,
+                    name=attachment,
+                    user_id=current_user_id,
+                    conversation_id=conversation_id,
+                )
+            )
+            if file_info:
+                valid_attachment_list.append(file_info)
+
         return valid_attachment_list
 
 

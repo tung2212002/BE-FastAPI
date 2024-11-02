@@ -3,12 +3,9 @@ from sqlalchemy.orm import Session
 from redis.asyncio import Redis
 from typing import Any, Dict, List, Tuple
 from fastapi import status
+from pydantic import BaseModel
 
-from app.core.websocket.websocket_manager import WebsocketManager
-from app.model import Account, MessageAttachment
-from app.core.conversation.conversation_helper import conversation_helper
-from app.core.message.message_helper import message_helper
-from app.common.exception import CustomException
+from app.model import Account, MessageAttachment, Message
 from app.crud import (
     account as accountCRUD,
     message as messageCRUD,
@@ -16,8 +13,11 @@ from app.crud import (
     conversation_member as conversation_memberCRUD,
     message_attachment as message_attachmentCRUD,
 )
+from app.core.websocket.websocket_manager import WebsocketManager
+from app.core.conversation.conversation_helper import conversation_helper
+from app.core.file.file_helper import file_helper
+from app.core.message.message_helper import message_helper
 from app.schema.conversation import ConversationResponse
-from app.hepler.enum import TypeAccount
 from app.schema.message import MessageCreate
 from app.schema.message_attachment import MessageAttachmentCreate
 from app.schema.websocket import (
@@ -25,9 +25,13 @@ from app.schema.websocket import (
     ResponseMessageSchema,
     AttachmentResponse,
 )
+from app.schema.websocket import NewConversationSchema
+from app.schema.file import FileInfo
 from app.schema.account import AccountBasicResponse
 from app.storage.cache.message_cache_service import message_cache_service
 from app.storage.cache.file_url_cache_service import file_url_cache_service
+from app.common.exception import CustomException
+from app.hepler.enum import TypeAccount, MessageType, WebsocketActionType
 
 
 class WebsocketHelper:
@@ -39,8 +43,8 @@ class WebsocketHelper:
         current_user: Account,
         member_ids: List[int],
         websocket_manager: WebsocketManager,
-    ) -> Tuple[ConversationResponse, List[Account]]:
-        response_conversation: ConversationResponse = None
+    ) -> Tuple[NewConversationSchema, List[Account]]:
+        response_conversation: NewConversationSchema = None
         members: List[Account] = []
 
         if len(member_ids) == 1:
@@ -60,7 +64,14 @@ class WebsocketHelper:
         except Exception as e:
             print(e)
 
-        return response_conversation, members
+        return (
+            NewConversationSchema(
+                **response_conversation.__dict__,
+                conversation_type=response_conversation.type,
+                members=members,
+            ),
+            members,
+        )
 
     async def create_private_conversation(
         self,
@@ -72,7 +83,7 @@ class WebsocketHelper:
         websocket_manager: WebsocketManager,
     ) -> Tuple[ConversationResponse, List[Account]]:
         try:
-            member = accountCRUD.get(db, member_ids[0])
+            member: Account = accountCRUD.get(db, member_ids[0])
             if not member:
                 await websocket_manager.send_error(
                     websocket, f"Member {member_ids[0]} not found."
@@ -150,88 +161,132 @@ class WebsocketHelper:
         conversation_id: int,
         message_data: NewMessageSchema,
     ) -> ResponseMessageSchema:
-        if not message_data.parent_id:
-            content: str = message_data.content
-            message = MessageCreate(
-                conversation_id=conversation_id,
-                account_id=current_user.id,
-                content=content,
-                parent_id=message_data.parent_id,
-            )
+        user: AccountBasicResponse = conversation_helper.get_user_basic_response(
+            db, current_user
+        )
 
-            message = messageCRUD.create(db, obj_in=message)
-            user: AccountBasicResponse = conversation_helper.get_user_basic_response(
-                db, current_user
-            )
-            outcoming_message = ResponseMessageSchema(
-                id=message.id,
-                conversation_id=message.conversation_id,
-                account_id=message.account_id,
-                content=message.content,
-                created_at=message.created_at,
-                user=user,
-            )
+        outcoming_message: ResponseMessageSchema = self.create_message(
+            db,
+            current_user.id,
+            conversation_id,
+            message_data,
+            [],
+            user,
+            MessageType.TEXT,
+        )
 
-            return outcoming_message
+        return outcoming_message
 
-    async def create_attach_message(
+    async def create_attachment_message(
         self,
         db: Session,
         redis: Redis,
         current_user: Account,
         conversation_id: int,
         message_data: NewMessageSchema,
+        attachments: List[FileInfo],
         is_new_conversation: bool,
-    ) -> ResponseMessageSchema:
-        attachments: List[str] = message_data.attachments
-        attachment_images: List[str] = file
-
-        message = MessageCreate(
-            conversation_id=conversation_id,
-            account_id=current_user.id,
-            parent_id=message_data.parent_id,
-            type=message_data.type,
+    ) -> List[ResponseMessageSchema]:
+        response: List[ResponseMessageSchema] = []
+        user: AccountBasicResponse = conversation_helper.get_user_basic_response(
+            db, current_user
         )
-        message = messageCRUD.create(db, obj_in=message)
 
-        attachments_response: List[AttachmentResponse] = []
+        attachment_images: List[FileInfo] = file_helper.filter_images(attachments)
+        attachment_files: List[FileInfo] = [
+            attachment
+            for attachment in attachments
+            if attachment not in attachment_images
+        ]
 
-        for index, attachment in enumerate(message_data.attachments):
-            message_attachment = MessageAttachmentCreate(
-                message_id=message.id,
-                url=attachment,
-                position=index,
+        if attachment_images:
+            outcoming_message = self.create_message(
+                db,
+                current_user.id,
+                conversation_id,
+                message_data,
+                attachment_images,
+                user,
+                MessageType.IMAGE,
             )
-            message_attachment: MessageAttachment = message_attachmentCRUD.create(
-                db, obj_in=message_attachment
-            )
-            attachment_response = AttachmentResponse(
-                upload_filename=attachment,
-                position=message_attachment.position,
-                id=message_attachment.id,
-            )
-            attachments_response.append(attachment_response)
+
+            response.append(outcoming_message)
+
+        if attachment_files:
+            for attachment in attachment_files:
+                outcoming_message: ResponseMessageSchema = self.create_message(
+                    db,
+                    current_user.id,
+                    conversation_id,
+                    message_data,
+                    [attachment],
+                    user,
+                )
+
+                response.append(outcoming_message)
 
         await file_url_cache_service.delete_cache_file_url_message(
             redis,
-            upload_filenames=message_data.attachments,
+            names=[attachment.name for attachment in attachments],
             user_id=current_user.id,
             conversation_id=0 if is_new_conversation else conversation_id,
         )
 
-        user: AccountBasicResponse = conversation_helper.get_user_basic_response(
-            db, current_user
-        )
-        outcoming_message = ResponseMessageSchema(
-            id=message.id,
-            conversation_id=message.conversation_id,
-            account_id=message.account_id,
-            created_at=message.created_at,
-            user=user,
-            atttachments=attachments_response,
+        return response
+
+    def create_message(
+        self,
+        db: Session,
+        account_id: int,
+        conversation_id: int,
+        new_message_data: NewMessageSchema,
+        attachments: List[FileInfo],
+        user: AccountBasicResponse,
+        type: MessageType,
+    ) -> ResponseMessageSchema:
+        attachment_response: List[AttachmentResponse] = []
+
+        message = MessageCreate(
+            conversation_id=conversation_id,
+            account_id=account_id,
+            type=type,
+            content=new_message_data.content,
+            parent_id=new_message_data.parent_id,
         )
 
-        return outcoming_message
+        message: Message = messageCRUD.create(db, obj_in=message)
+
+        for index, attachment in enumerate(attachments):
+            message_attachment = MessageAttachmentCreate(
+                **attachment.model_dump(),
+                position=index,
+                message_id=message.id,
+            )
+
+            message_attachment: MessageAttachment = message_attachmentCRUD.create(
+                db, obj_in=message_attachment
+            )
+
+            attachment_response.append(
+                AttachmentResponse(**message_attachment.__dict__)
+            )
+
+        return ResponseMessageSchema(
+            **{k: v for k, v in message.__dict__.items() if k != "type"},
+            user=user,
+            attachments=attachment_response,
+            type=WebsocketActionType.NEW_MESSAGE,
+        )
+
+    async def broadcast(
+        self,
+        websocket_manager: WebsocketManager,
+        conversation_id: int,
+        outcoming_message: BaseModel,
+    ) -> None:
+        await websocket_manager.broadcast(
+            conversation_id, outcoming_message.model_dump_json()
+        )
 
 
 websocket_helper = WebsocketHelper()

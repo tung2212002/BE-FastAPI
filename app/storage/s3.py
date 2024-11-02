@@ -30,7 +30,7 @@ class S3:
                 key,
                 ExtraArgs={"ContentType": file.content_type},
             )
-            return f"{self.bucket_name}.s3.amazonaws.com/{key}"
+            return f"https://{self.bucket_name}.s3.amazonaws.com/{key}"
         except ClientError as e:
             raise e
 

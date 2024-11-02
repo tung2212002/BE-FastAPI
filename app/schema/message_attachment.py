@@ -4,6 +4,7 @@ from typing import List, Optional
 from fastapi import UploadFile
 
 from app.hepler.schema_validator import SchemaValidator
+from app.hepler.enum import AttachmentType
 
 
 # request
@@ -29,6 +30,9 @@ class MessageAttachmentCreate(BaseModel):
     message_id: int
     url: str
     position: int
+    name: str
+    size: int
+    type: AttachmentType
 
     model_config = ConfigDict(from_attribute=True, extra="ignore")
 
@@ -38,14 +42,19 @@ class MessageAttachmentResponse(BaseModel):
     id: int
     message_id: int
     url: str
+    name: str
+    size: int
+    type: AttachmentType
     position: int
 
     model_config = ConfigDict(from_attribute=True, extra="ignore")
 
 
 class AttachmentResponse(BaseModel):
-    upload_filename: str
+    name: str
     url: str = None
+    size: Optional[int] = None
+    type: Optional[AttachmentType] = None
     id: Optional[int] = None
     position: Optional[int] = None
 

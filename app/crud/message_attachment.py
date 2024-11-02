@@ -17,9 +17,7 @@ class CRUDMessageAttachment:
         )
 
     def create(self, db: Session, obj_in: MessageAttachmentCreate) -> MessageAttachment:
-        db_obj = MessageAttachment(
-            message_id=obj_in.message_id, url=obj_in.url, position=obj_in.position
-        )
+        db_obj = MessageAttachment(**obj_in.model_dump())
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)

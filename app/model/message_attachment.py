@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.db.base_class import Base
-from app.hepler.enum import FileType
+from app.hepler.enum import AttachmentType
 
 
 class MessageAttachment(Base):
@@ -15,9 +15,9 @@ class MessageAttachment(Base):
     )
     url = Column(String(255), nullable=False)
     name = Column(String(255), nullable=False)
-    type = Column(Enum(FileType), nullable=False)
+    type = Column(Enum(AttachmentType), nullable=False)
     size = Column(Integer, nullable=False)
-    position = Column(Integer, nullable=False)
+    position = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()

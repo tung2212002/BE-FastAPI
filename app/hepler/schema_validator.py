@@ -139,8 +139,8 @@ class SchemaValidator:
 
     @staticmethod
     def validate_attachment_url(v, values):
-        if "upload_filename" in values:
-            v = constant.BUCKET_URL + values["upload_filename"]
+        if "name" in values:
+            v = constant.BUCKET_URL + values["name"]
         return v
 
     @staticmethod

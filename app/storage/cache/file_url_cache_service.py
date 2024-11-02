@@ -29,23 +29,23 @@ class FileUrlCacheService(BaseCache):
         )
 
     async def get_cache_file_url(
-        self, redis: Redis, *, upload_filename, user_id: int, flex_key: str
+        self, redis: Redis, *, name, user_id: int, flex_key: str
     ) -> FileInfo:
         response = await self.get(
             redis,
-            f"{self.image_url_message_key}:{user_id}:{flex_key}:{upload_filename}",
+            f"{self.image_url_message_key}:{user_id}:{flex_key}:{name}",
         )
         return response if response else None
 
     async def get_cache_file_url_message(
-        self, redis: Redis, *, upload_filename, user_id: int, conversation_id: int
+        self, redis: Redis, *, name, user_id: int, conversation_id: int
     ) -> FileInfo:
         flex_key = str(conversation_id)
         response = await self.get_cache_file_url(
             redis,
-            upload_filename=upload_filename,
+            name=name,
             user_id=user_id,
-            conversation_id=flex_key,
+            flex_key=flex_key,
         )
         return FileInfo(**json.loads(response)) if response else None
 
@@ -53,33 +53,33 @@ class FileUrlCacheService(BaseCache):
         self,
         redis: Redis,
         *,
-        upload_filenames: list[str],
+        names: list[str],
         user_id: int,
         flex_key: str,
-        upload_filename: str,
+        name: str,
     ):
-        for upload_filename in upload_filenames:
+        for name in names:
             await self.delete(
                 redis,
-                f"{self.image_url_message_key}:{str(user_id)}:{flex_key}:{upload_filename}",
+                f"{self.image_url_message_key}:{str(user_id)}:{flex_key}:{name}",
             )
 
     async def delete_cache_file_url_message(
         self,
         redis: Redis,
         *,
-        upload_filenames: list[str],
+        names: list[str],
         user_id: int,
         conversation_id: int,
     ):
         flex_key: str = str(conversation_id)
-        for upload_filename in upload_filenames:
+        for name in names:
             await self.delete_cache_file_url(
                 redis,
-                upload_filenames=upload_filenames,
+                names=names,
                 user_id=user_id,
                 flex_key=flex_key,
-                upload_filename=upload_filename,
+                name=name,
             )
 
     async def cache_file_url_message(

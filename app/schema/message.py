@@ -79,7 +79,7 @@ class MessageBasicResponse(BaseModel):
     updated_at: Optional[datetime] = None
     user: AccountBasicResponse
     parent: Optional[dict] = None
-    atttachments: Optional[List[AttachmentResponse]] = None
+    attachments: Optional[List[AttachmentResponse]] = None
     is_pinned: bool
 
     model_config = ConfigDict(from_attribute=True, extra="ignore")
