@@ -18,14 +18,14 @@ from app.schema.cv_application import (
     CVApplicationUserFilterCount,
     CVApplicationUserItemResponse,
 )
+from app.schema.file import FileInfo
 from app.common.exception import CustomException
 from app.model import Account, CVApplication, Job
 from app.common.response import CustomResponse
 from app.storage.cache.cv_cache_service import cv_cache_service
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
-from app.storage.s3 import s3_service
-from app.core.cv_applications.cv_applications_helper import cv_applications_helper
-from app.hepler.enum import CVApplicationStatus
+from app.core.file.file_helper import file_helper
+from app.hepler.enum import CVApplicationStatus, FolderBucket
 
 
 class CVApplicationsService:
@@ -99,15 +99,16 @@ class CVApplicationsService:
                     msg="CV application is max apply",
                 )
 
-        cv_file = cv_applications_data.cv
-        if cv_file:
-            key = cv_file.filename
-            s3_service.upload_file(cv_file, key)
-            cv_applications_data.cv = key
+        file_info: FileInfo = await file_helper.upload_file(
+            cv_applications_data.cv, FolderBucket.CV
+        )
 
         if cv_application:
             obj_in = CVApplicationUpdateInfo(
-                cv=cv_applications_data.cv,
+                cv=file_info.url,
+                name=file_info.name,
+                size=file_info.size,
+                type=file_info.type,
                 letter_cover=cv_applications_data.letter_cover,
                 status=CVApplicationStatus.PENDING,
                 full_name=cv_applications_data.full_name,
@@ -120,7 +121,9 @@ class CVApplicationsService:
             )
         else:
             obj_in = CVApplicationCreate(
-                **cv_applications_data.__dict__,
+                **{k: v for k, v in cv_applications_data.__dict__.items() if k != "cv"},
+                **file_info.model_dump(),
+                cv=file_info.url,
                 user_id=current_user.id,
                 campaign_id=job.campaign.id,
             )

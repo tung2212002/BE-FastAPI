@@ -7,7 +7,7 @@ from app.model import (
     Account,
     Conversation,
     Message,
-    MessageImage,
+    MessageAttachment,
     MessageReaction,
     PinnedMessage,
 )
@@ -16,7 +16,7 @@ from app.crud import (
     contact as contactCRUD,
     message as messageCRUD,
     message_reaction as message_reactionCRUD,
-    message_image as message_imageCRUD,
+    message_attachment as message_attachmentCRUD,
     pinned_message as pinned_messageCRUD,
     account as accountCRUD,
 )
@@ -26,7 +26,7 @@ from app.schema.account import AccountBasicResponse
 from app.schema.conversation import ConversationResponse
 from app.schema.message import MessageResponse, GetMessagesRequest, Attachment
 from app.schema.message_reaction import MessageReactionResponse
-from app.schema.message_image import MessageImageResponse, AttachmentResponse
+from app.schema.message_attachment import MessageAttachmentResponse, AttachmentResponse
 from app.core.business.business_helper import business_helper
 from app.core.user.user_helper import user_helper
 from app.core.conversation.conversation_helper import conversation_helper
@@ -53,7 +53,7 @@ class MessageService:
         response = []
         for message in messages:
             parent_message: Message = None
-            images: List[MessageImage] = []
+            message_attachments: List[MessageAttachment] = []
             reaction: MessageReaction = (
                 message_reactionCRUD.get_by_account_id_and_message_id(
                     db, account_id=current_user.id, message_id=message.id
@@ -66,8 +66,11 @@ class MessageService:
             if message.parent_id:
                 parent_message = messageCRUD.get(db, message.parent_id)
 
-            if message.type == MessageType.IMAGE:
-                images = message_imageCRUD.get_by_message_id(db, message_id=message.id)
+            message_attachments: List[MessageAttachment] = []
+            if message.type in [MessageType.IMAGE, MessageType.FILE]:
+                message_attachments = message_attachmentCRUD.get_by_message_id(
+                    db, message_id=message.id
+                )
 
             response.append(
                 MessageResponse(
@@ -75,7 +78,8 @@ class MessageService:
                     user=user,
                     parent=parent_message.__dict__ if parent_message else None,
                     attachments=[
-                        MessageImageResponse(**image.__dict__) for image in images
+                        AttachmentResponse(**attachment.__dict__)
+                        for attachment in message_attachments
                     ],
                     reaction=(
                         MessageReactionResponse(**reaction.__dict__)

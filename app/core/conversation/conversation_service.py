@@ -4,6 +4,7 @@ from typing import List
 from fastapi import status
 from datetime import datetime
 
+from app.model import Account, Conversation
 from app.crud import (
     conversation as conversationCRUD,
     account as accountCRUD,
@@ -22,13 +23,13 @@ from app.schema.websocket import (
     NewConversationSchema,
     UpdateAvatarConversationSchema,
 )
-from app.schema.message_image import AttachmentCreateRequest, AttachmentResponse
+from app.schema.file import FileInfo
+from app.schema.message_attachment import AttachmentCreateRequest, AttachmentResponse
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
-from app.model import Account, Conversation, ConversationMember
 from app.core.conversation.conversation_helper import conversation_helper
-from app.hepler.enum import ConversationType, TypeAccount
-from app.storage.s3 import s3_service
+from app.core.file.file_helper import file_helper
+from app.hepler.enum import ConversationType, TypeAccount, FolderBucket
 from app.core.websocket.websocket_handler import websocket_manager
 from app.storage.cache.file_url_cache_service import file_url_cache_service
 
@@ -85,7 +86,6 @@ class ConversationService:
         member_ids: List[int] = conversation_helper.filter_member(
             conversation_data.members, current_user
         )
-
         conversation_id: int = conversation_memberCRUD.get_by_account_ids(
             db, [current_user.id] + member_ids
         )
@@ -211,10 +211,10 @@ class ConversationService:
                 status_code=status.HTTP_404_NOT_FOUND, msg="Conversation not found"
             )
 
-        avatar = conversation_data.avatar
-        key = avatar.filename
-        s3_service.upload_file(avatar, key)
-        conversation_data.avatar = key
+        file_info: FileInfo = await file_helper.upload_file(
+            conversation_data.avatar, FolderBucket.AVATAR
+        )
+        conversation_data.avatar = file_info.url
 
         obj_in = ConversationUpdate(**conversation_data.model_dump())
         conversation = conversationCRUD.update(db, db_obj=conversation, obj_in=obj_in)
@@ -250,18 +250,21 @@ class ConversationService:
                 status_code=status.HTTP_404_NOT_FOUND, msg="Conversation not found"
             )
 
-        files = attach_file_data.files
-        file = files[0]
-        key = file.filename
-        s3_service.upload_file(file, key)
+        file_info: FileInfo = await file_helper.upload_file(
+            attach_file_data.files[0], FolderBucket.ATTACHMENT
+        )
+
         try:
-            file_url_cache_service.cache_image_url_message(
-                redis, user_id=current_user.id, conversation_id=conversation.id, key=key
+            await file_url_cache_service.cache_file_url_message(
+                redis,
+                user_id=current_user.id,
+                conversation_id=conversation.id,
+                file_info=file_info,
             )
         except Exception as e:
             print(e)
 
-        return CustomResponse(data=AttachmentResponse(upload_filename=key))
+        return CustomResponse(data=AttachmentResponse(**file_info.model_dump()))
 
 
 conversation_service = ConversationService()

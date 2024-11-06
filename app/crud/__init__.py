@@ -31,6 +31,6 @@ from .conversation import conversation
 from .message import message
 from .conversation_member import conversation_member
 from .message_reaction import message_reaction
-from .message_image import message_image
+from .message_attachment import message_attachment
 from .pinned_message import pinned_message
 from .contact import contact

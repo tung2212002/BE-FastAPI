@@ -3,12 +3,11 @@ from typing import List, Union, Optional
 from datetime import datetime
 
 from app.hepler.enum import WebsocketActionType
-from app.schema.user import UserBasicResponse
-from app.schema.business import BusinessBasicInfoResponse
-from app.hepler.enum import MessageType, ConversationType
+from app.hepler.enum import MessageType, ConversationType, CreateMessageType
 from app.schema.account import AccountBasicResponse
 from app.schema.message_reaction import MessageReactionResponse
-from app.schema.message_image import AttachmentResponse
+from app.schema.message_attachment import AttachmentResponse
+from app.hepler.schema_validator import SchemaValidator
 
 
 class BaseSchema(BaseModel):
@@ -16,12 +15,12 @@ class BaseSchema(BaseModel):
 
 
 class NewMessageSchema(BaseSchema):
-    content: str = Field(..., min_length=1, max_length=255)
+    content: Optional[str] = Field(None, max_length=255)
     members: List[int] = []
     conversation_id: int = None
-    type: MessageType = MessageType.TEXT
     parent_id: int = None
     attachments: List[str] = []
+    type: CreateMessageType = CreateMessageType.TEXT
 
     @validator("conversation_id")
     def contain_members_or_conversation(cls, v, values):
@@ -29,13 +28,18 @@ class NewMessageSchema(BaseSchema):
             raise ValueError("Must contain members or conversation_id")
         return v
 
+    @validator("type")
+    def validate_type(cls, v, values):
+        return SchemaValidator.validate_message_type_and_data(v, values)
+
 
 class ResponseMessageSchema(BaseSchema):
     id: int
     conversation_id: int
     account_id: int
     type: WebsocketActionType = WebsocketActionType.NEW_MESSAGE
-    content: str
+    message_type: MessageType = MessageType.TEXT
+    content: Optional[str] = None
     created_at: datetime
     dislike_count: Optional[int] = 0
     like_count: Optional[int] = 0
@@ -43,7 +47,7 @@ class ResponseMessageSchema(BaseSchema):
     parent_id: Optional[int] = None
     parent: Optional[dict] = None
     reaction: Optional[MessageReactionResponse] = None
-    atttachments: Optional[List[AttachmentResponse]] = None
+    attachments: Optional[List[AttachmentResponse]] = None
     user: AccountBasicResponse
 
 

@@ -13,6 +13,8 @@ from app.hepler.enum import (
     SortByJob,
     OrderType,
     AdminJobApprovalStatus,
+    MessageType,
+    CreateMessageType,
 )
 from app.hepler.common import CommonHelper
 
@@ -84,9 +86,6 @@ class SchemaValidator:
                 raise ValueError("Invalid avatar type")
             elif v.size > constant.MAX_IMAGE_SIZE:
                 raise ValueError("Avatar size must be at most 2MB")
-            v.filename = CommonHelper.generate_file_name(
-                FolderBucket.AVATAR, v.filename
-            )
         return v
 
     @staticmethod
@@ -96,20 +95,22 @@ class SchemaValidator:
                 raise ValueError("Invalid cv type")
             elif v.size > constant.MAX_CV_SIZE:
                 raise ValueError("CV size must be at most 2MB")
-            v.filename = CommonHelper.generate_file_name(FolderBucket.CV, v.filename)
         return v
 
     @staticmethod
     def validate_files(v: List[UploadFile]):
         if v is not None:
             for file in v:
-                if file.content_type not in constant.ALLOWED_IMAGE_TYPES:
+                if file.content_type not in constant.ALLOWED_FILE_TYPES:
                     raise ValueError("Invalid file type")
-                elif file.size > constant.MAX_IMAGE_SIZE:
-                    raise ValueError("File size must be at most 2MB")
-                file.filename = CommonHelper.generate_file_name(
-                    FolderBucket.ATTACHMENT, file.filename
-                )
+                # elif file.size > constant.MAX_IMAGE_SIZE:
+                #     raise ValueError("File size must be at most 2MB")
+                if file.content_type in constant.ALLOWED_IMAGE_TYPES:
+                    if file.size > constant.MAX_IMAGE_SIZE:
+                        raise ValueError("Image size must be at most 2MB")
+                else:
+                    if file.size > constant.MAX_FILE_SIZE:
+                        raise ValueError("File size must be at most 5MB")
         return v
 
     @staticmethod
@@ -126,13 +127,12 @@ class SchemaValidator:
                 raise ValueError("Invalid image type")
             elif v.size > constant.MAX_IMAGE_SIZE:
                 raise ValueError("Image size must be at most 2MB")
-            v.filename = CommonHelper.generate_file_name(FolderBucket.LOGO, v.filename)
         return v
 
     @staticmethod
     def validate_attachment_url(v, values):
-        if "upload_filename" in values:
-            v = constant.BUCKET_URL + values["upload_filename"]
+        if "name" in values and not v.startswith("https://"):
+            v = constant.BUCKET_URL + values["name"]
         return v
 
     @staticmethod
@@ -331,4 +331,16 @@ class SchemaValidator:
         v = list(set(v))
         if len(v) < 1:
             raise ValueError("Invalid list member")
+        return v
+
+    @staticmethod
+    def validate_message_type_and_data(v, values):
+        if v == CreateMessageType.TEXT and (
+            "content" not in values or len(values["content"]) == 0
+        ):
+            raise ValueError("Content is required")
+        elif (v == CreateMessageType.ATTACHMENT) and (
+            "attachments" not in values or len(values["attachments"]) == 0
+        ):
+            raise ValueError("attachments is required")
         return v

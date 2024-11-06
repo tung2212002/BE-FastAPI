@@ -22,7 +22,7 @@ class S3:
             aws_secret_access_key=self.aws_secret_access_key,
         )
 
-    def upload_file(self, file, key):
+    async def upload_file(self, file, key):
         try:
             self.client.upload_fileobj(
                 file.file,
@@ -30,11 +30,11 @@ class S3:
                 key,
                 ExtraArgs={"ContentType": file.content_type},
             )
-            return f"{self.bucket_name}.s3.amazonaws.com/{key}"
+            return f"https://{self.bucket_name}.s3.amazonaws.com/{key}"
         except ClientError as e:
             raise e
 
-    def delete_file(self, key):
+    async def delete_file(self, key):
         try:
             self.client.delete_object(Bucket=self.bucket_name, Key=key)
         except ClientError as e:
@@ -42,7 +42,7 @@ class S3:
                 return None
             raise e
 
-    def get_file(self, key):
+    async def get_file(self, key):
         try:
             response = self.client.get_object(Bucket=self.bucket_name, Key=key)
             return response["Body"].read()
@@ -51,7 +51,7 @@ class S3:
                 return None
             raise e
 
-    def get_file_url(self, key):
+    async def get_file_url(self, key):
         return f"https://{self.bucket_name}.s3.amazonaws.com/{key}"
 
 

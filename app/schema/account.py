@@ -35,6 +35,7 @@ class AccountUpdate(BaseModel):
 class AccountBasicResponse(BaseModel):
     id: int
     full_name: str
+    email: str
     avatar: Optional[str] = None
     role: Role
     type_account: TypeAccount

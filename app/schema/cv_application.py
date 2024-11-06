@@ -3,7 +3,11 @@ from fastapi import UploadFile
 from typing import Optional, Union
 from datetime import datetime
 
-from app.hepler.enum import CVApplicationStatus, CVApplicationUpdateStatus
+from app.hepler.enum import (
+    CVApplicationStatus,
+    CVApplicationUpdateStatus,
+    AttachmentType,
+)
 from app.schema.page import Pagination
 from app.hepler.schema_validator import SchemaValidator
 from app.schema.job import JobItemResponseGeneral
@@ -73,6 +77,9 @@ class CVApplicationCreate(CVApplicationBase):
     campaign_id: int
     user_id: int
     cv: str
+    name: str
+    size: int
+    type: AttachmentType
     status: CVApplicationStatus = CVApplicationStatus.PENDING
 
 
@@ -84,6 +91,9 @@ class CVApplicationUpdate(BaseModel):
 
 class CVApplicationUpdateInfo(BaseModel):
     cv: str
+    name: str
+    size: int
+    type: AttachmentType
     status: CVApplicationStatus
     full_name: str
     email: str
@@ -102,6 +112,9 @@ class CVApplicationUserItemResponse(CVApplicationBase):
     job: JobItemResponseGeneral
     company: CompanyItemGeneralResponse
     cv: str
+    name: str
+    size: int
+    type: AttachmentType
     count_apply: int
 
     @validator("cv")
@@ -115,6 +128,9 @@ class CVApplicationGeneralResponse(CVApplicationBase):
     created_at: datetime
     job: JobItemResponseGeneral
     cv: str
+    name: str
+    size: int
+    type: AttachmentType
     count_apply: int
 
     @validator("cv")

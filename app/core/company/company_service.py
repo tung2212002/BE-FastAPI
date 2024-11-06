@@ -1,3 +1,4 @@
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from app.crud import company as companyCRUD
@@ -9,16 +10,15 @@ from app.schema.company import (
     CompanyPagination,
 )
 from app.schema.page import Pagination
-from app.hepler.enum import Role
-from app.storage.s3 import s3_service
+from app.schema.file import FileInfo
+from app.hepler.enum import Role, FolderBucket
 from app.core.auth.business_auth_helper import business_auth_helper
 from app.core.field.field_helper import field_helper
-from app.model import Manager, Account, Business
+from app.core.file.file_helper import file_helper
 from app.core.company.company_helper import company_helper
-from fastapi import status
+from app.model import Manager, Account, Business
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
-from app.model import Manager
 
 
 class CompanyService:
@@ -104,9 +104,8 @@ class CompanyService:
 
         logo = company_data.logo
         if logo:
-            key = logo.filename
-            s3_service.upload_file(logo, key)
-            company_data.logo = key
+            file_info: FileInfo = await file_helper.upload_file(logo, FolderBucket.LOGO)
+            company_data.logo = file_info.url
 
         if current_user.role == Role.BUSINESS:
             company_data = {
@@ -141,9 +140,8 @@ class CompanyService:
         if new_fields:
             field_helper.check_list_valid(db, new_fields)
         if logo:
-            key = logo.filename
-            s3_service.upload_file(logo, key)
-            company_data.logo = key
+            file_info: FileInfo = await file_helper.upload_file(logo, FolderBucket.LOGO)
+            company_data.logo = file_info.url
 
         obj_in = CompanyUpdate(**company_data.model_dump())
         company = companyCRUD.update(db, db_obj=company, obj_in=obj_in)

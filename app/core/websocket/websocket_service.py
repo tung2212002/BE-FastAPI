@@ -68,12 +68,14 @@ class WebsocketService:
                         message_data,
                         current_user,
                     )
+
                 except (JSONDecodeError, AttributeError) as e:
                     await websocket_manager.send_error(
                         websocket, "Invalid message format."
                     )
                     continue
                 except ValueError as e:
+                    print(e)
                     await websocket_manager.send_error(
                         websocket, "Could not validate message."
                     )

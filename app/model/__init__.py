@@ -45,5 +45,5 @@ from .conversation import Conversation
 from .message import Message
 from .conversation_member import ConversationMember
 from .message_reaction import MessageReaction
-from .message_image import MessageImage
+from .message_attachment import MessageAttachment
 from .pinned_message import PinnedMessage
