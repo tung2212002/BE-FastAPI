@@ -161,8 +161,8 @@ class UserAuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, msg="Invalid token"
             )
 
-        email = token_decode["email"]
-        user = userCRUD.get_by_email(db, email)
+        id = token_decode["id"]
+        user = userCRUD.get(db, id)
         if user is None:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND, msg="User not found"
