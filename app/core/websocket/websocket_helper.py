@@ -31,7 +31,7 @@ from app.schema.account import AccountBasicResponse
 from app.storage.cache.message_cache_service import message_cache_service
 from app.storage.cache.file_url_cache_service import file_url_cache_service
 from app.common.exception import CustomException
-from app.hepler.enum import TypeAccount, MessageType, WebsocketActionType
+from app.hepler.enum import TypeAccount, MessageType, WebsocketActionType, FolderBucket
 
 
 class WebsocketHelper:
@@ -66,9 +66,16 @@ class WebsocketHelper:
 
         return (
             NewConversationSchema(
-                **response_conversation.__dict__,
+                **{
+                    k: v
+                    for k, v in response_conversation.__dict__.items()
+                    if k not in ["type", "members"]
+                },
                 conversation_type=response_conversation.type,
-                members=members,
+                members=[
+                    conversation_helper.get_user_basic_response(db, member)
+                    for member in members
+                ],
             ),
             members,
         )
@@ -221,6 +228,7 @@ class WebsocketHelper:
                     message_data,
                     [attachment],
                     user,
+                    MessageType.FILE,
                 )
 
                 response.append(outcoming_message)
@@ -276,6 +284,7 @@ class WebsocketHelper:
             user=user,
             attachments=attachment_response,
             type=WebsocketActionType.NEW_MESSAGE,
+            message_type=type,
         )
 
     async def broadcast(

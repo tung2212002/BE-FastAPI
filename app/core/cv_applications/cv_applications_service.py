@@ -25,7 +25,7 @@ from app.common.response import CustomResponse
 from app.storage.cache.cv_cache_service import cv_cache_service
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
 from app.core.file.file_helper import file_helper
-from app.hepler.enum import CVApplicationStatus
+from app.hepler.enum import CVApplicationStatus, FolderBucket
 
 
 class CVApplicationsService:
@@ -99,7 +99,9 @@ class CVApplicationsService:
                     msg="CV application is max apply",
                 )
 
-        file_info: FileInfo = await file_helper.upload_file(cv_applications_data.cv)
+        file_info: FileInfo = await file_helper.upload_file(
+            cv_applications_data.cv, FolderBucket.CV
+        )
 
         if cv_application:
             obj_in = CVApplicationUpdateInfo(

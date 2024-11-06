@@ -29,7 +29,7 @@ from app.common.exception import CustomException
 from app.common.response import CustomResponse
 from app.core.conversation.conversation_helper import conversation_helper
 from app.core.file.file_helper import file_helper
-from app.hepler.enum import ConversationType, TypeAccount
+from app.hepler.enum import ConversationType, TypeAccount, FolderBucket
 from app.core.websocket.websocket_handler import websocket_manager
 from app.storage.cache.file_url_cache_service import file_url_cache_service
 
@@ -211,8 +211,10 @@ class ConversationService:
                 status_code=status.HTTP_404_NOT_FOUND, msg="Conversation not found"
             )
 
-        file_info: FileInfo = await file_helper.upload_file(conversation_data.avatar)
-        conversation_data.avatar = file_info.name
+        file_info: FileInfo = await file_helper.upload_file(
+            conversation_data.avatar, FolderBucket.AVATAR
+        )
+        conversation_data.avatar = file_info.url
 
         obj_in = ConversationUpdate(**conversation_data.model_dump())
         conversation = conversationCRUD.update(db, db_obj=conversation, obj_in=obj_in)
@@ -248,7 +250,9 @@ class ConversationService:
                 status_code=status.HTTP_404_NOT_FOUND, msg="Conversation not found"
             )
 
-        file_info: FileInfo = await file_helper.upload_file(attach_file_data.files[0])
+        file_info: FileInfo = await file_helper.upload_file(
+            attach_file_data.files[0], FolderBucket.ATTACHMENT
+        )
 
         try:
             await file_url_cache_service.cache_file_url_message(

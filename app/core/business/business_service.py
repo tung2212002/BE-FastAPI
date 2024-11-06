@@ -25,6 +25,7 @@ from app.schema.page import Pagination
 from app.schema.account import AccountCreate, AccountUpdate
 from app.schema.manager import ManagerCreate, ManagerUpdate
 from app.schema.file import FileInfo
+from app.hepler.enum import FolderBucket
 
 
 class BusinessService:
@@ -90,8 +91,10 @@ class BusinessService:
 
         avatar = business_data.avatar
         if avatar:
-            file_info: FileInfo = await file_helper.upload_file(avatar)
-            business_data.avatar = file_info.name
+            file_info: FileInfo = await file_helper.upload_file(
+                avatar, FolderBucket.AVATAR
+            )
+            business_data.avatar = file_info.url
 
         account = accountCRUD.create(
             db, obj_in=AccountCreate(**business_data.model_dump())
@@ -127,8 +130,10 @@ class BusinessService:
 
         avatar = business_data.avatar
         if avatar:
-            file_info: FileInfo = await file_helper.upload_file(avatar)
-            business_data.avatar = file_info.name
+            file_info: FileInfo = await file_helper.upload_file(
+                avatar, FolderBucket.AVATAR
+            )
+            business_data.avatar = file_info.url
 
         account = accountCRUD.update(
             db=db,

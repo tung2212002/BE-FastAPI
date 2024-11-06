@@ -18,6 +18,7 @@ from app.core.file.file_helper import file_helper
 from app.model import Account
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
+from app.hepler.enum import FolderBucket
 
 
 class UserService:
@@ -78,8 +79,10 @@ class UserService:
             )
         avatar = user_data.avatar
         if avatar:
-            file_info: FileInfo = await file_helper.upload_file(avatar)
-            user_data.avatar = file_info.name
+            file_info: FileInfo = await file_helper.upload_file(
+                avatar, FolderBucket.AVATAR
+            )
+            user_data.avatar = file_info.url
 
         account = accountCRUD.create(db, obj_in=AccountCreate(**user_data.model_dump()))
         user = userCRUD.create(
@@ -106,8 +109,10 @@ class UserService:
 
         avatar = user_data.avatar
         if avatar:
-            file_info: FileInfo = await file_helper.upload_file(avatar)
-            user_data.avatar = file_info.name
+            file_info: FileInfo = await file_helper.upload_file(
+                avatar, FolderBucket.AVATAR
+            )
+            user_data.avatar = file_info.url
 
         account_data = AccountUpdate(**user_data.model_dump())
         account = accountCRUD.update(db, obj_in=account_data, db_obj=current_user)

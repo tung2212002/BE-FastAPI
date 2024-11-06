@@ -11,7 +11,7 @@ from app.schema.company import (
 )
 from app.schema.page import Pagination
 from app.schema.file import FileInfo
-from app.hepler.enum import Role
+from app.hepler.enum import Role, FolderBucket
 from app.core.auth.business_auth_helper import business_auth_helper
 from app.core.field.field_helper import field_helper
 from app.core.file.file_helper import file_helper
@@ -19,7 +19,6 @@ from app.core.company.company_helper import company_helper
 from app.model import Manager, Account, Business
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
-from app.model import Manager
 
 
 class CompanyService:
@@ -105,8 +104,8 @@ class CompanyService:
 
         logo = company_data.logo
         if logo:
-            file_info: FileInfo = await file_helper.upload_file(logo)
-            company_data.logo = file_info.name
+            file_info: FileInfo = await file_helper.upload_file(logo, FolderBucket.LOGO)
+            company_data.logo = file_info.url
 
         if current_user.role == Role.BUSINESS:
             company_data = {
@@ -141,8 +140,8 @@ class CompanyService:
         if new_fields:
             field_helper.check_list_valid(db, new_fields)
         if logo:
-            file_info: FileInfo = await file_helper.upload_file(logo)
-            company_data.logo = file_info.name
+            file_info: FileInfo = await file_helper.upload_file(logo, FolderBucket.LOGO)
+            company_data.logo = file_info.url
 
         obj_in = CompanyUpdate(**company_data.model_dump())
         company = companyCRUD.update(db, db_obj=company, obj_in=obj_in)
