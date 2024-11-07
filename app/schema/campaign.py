@@ -1,10 +1,11 @@
 from pydantic import BaseModel, validator, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 from app.hepler.enum import CampaignStatus, FilterCampaign
 from app.schema.page import Pagination
 from app.hepler.schema_validator import SchemaValidator
+from app.schema.job import CVApplicationInfoResponse
 
 
 class CampaignBase(BaseModel):
@@ -134,6 +135,8 @@ class CampaignItemResponse(CampaignBase):
     status: Optional[CampaignStatus] = CampaignStatus.OPEN
     optimal_score: Optional[int] = 0
     job: Optional[dict] = None
+    count_apply: Optional[int] = 0
+    latest_cvs: Optional[List[CVApplicationInfoResponse]] = []
 
     @validator("status")
     def validate_status(cls, v):

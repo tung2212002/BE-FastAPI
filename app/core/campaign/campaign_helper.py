@@ -1,3 +1,4 @@
+from fastapi import status as status_code
 from sqlalchemy.orm import Session
 from typing import Optional, Union, Tuple, List
 from pydantic import BaseModel
@@ -5,6 +6,7 @@ from pydantic import BaseModel
 from app.crud import campaign as campaignCRUD, company as companyCRUD
 from app.hepler.enum import CampaignStatus
 from app.core.job.job_helper import job_helper
+from app.core.cv_applications.cv_applications_helper import cv_applications_helper
 from app.model import Campaign
 from app.schema.campaign import (
     CampaignItemResponse,
@@ -17,7 +19,7 @@ from app.schema.campaign import (
     CampaignGetHasPendingJobPagination,
     CountGetListStatusPagination,
 )
-from fastapi import status as status_code
+from app.schema.job import CVApplicationInfoResponse
 from app.common.exception import CustomException
 
 
@@ -64,9 +66,15 @@ class CampaignHelper:
 
     def get_info(self, db: Session, campaign: Campaign) -> CampaignItemResponse:
         job = job_helper.get_info_general(campaign.job) if campaign.job else None
+
         campaign_response = CampaignItemResponse(
             **{k: v for k, v in campaign.__dict__.items() if k not in ["job"]},
             job=job.model_dump() if job else None,
+            latest_cvs=(
+                cv_applications_helper.list_info_by_campaign_id(db, campaign.id, 0, 5)
+                if campaign.count_apply > 0
+                else []
+            )
         )
 
         return campaign_response
