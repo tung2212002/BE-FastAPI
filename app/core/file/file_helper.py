@@ -10,7 +10,7 @@ from app.hepler.common import CommonHelper
 class FileHelper:
     async def upload_file(self, file: UploadFile, bucket: FolderBucket) -> FileInfo:
         filename = file.filename
-        key = CommonHelper.generate_file_name(bucket, filename)
+        key = CommonHelper.generate_file_name(bucket.value, filename)
         url = await s3_service.upload_file(file, key)
         return FileInfo(
             name=filename,
