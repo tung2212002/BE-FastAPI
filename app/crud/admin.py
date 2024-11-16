@@ -30,7 +30,7 @@ class CRUDAdmin(CRUDBase[Admin, schema_admin.AdminCreate, schema_admin.AdminUpda
             db, skip=skip, limit=limit, sort_by=sort_by, order_by=order_by
         )
 
-    def create(self, db: Session, *, obj_in: schema_admin.AdminCreateRequest) -> Admin:
+    def create(self, db: Session, *, obj_in: schema_admin.AdminCreate) -> Admin:
         db_obj = Admin(**obj_in)
         db.add(db_obj)
         db.commit()

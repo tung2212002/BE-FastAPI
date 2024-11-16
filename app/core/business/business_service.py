@@ -25,16 +25,16 @@ from app.schema.page import Pagination
 from app.schema.account import AccountCreate, AccountUpdate
 from app.schema.manager import ManagerCreate, ManagerUpdate
 from app.schema.file import FileInfo
-from app.hepler.enum import FolderBucket
+from app.hepler.enum import FolderBucket, Role
 
 
 class BusinessService:
     async def get_me(self, db: Session, current_user: Account):
         response = None
-        if current_user.manager.business is None:
-            response = admin_helper.get_info_by_manager(db, current_user.manager)
-        else:
+        if current_user.role == Role.BUSINESS:
             response = business_helper.get_info_by_account(db, current_user)
+        else:
+            response = admin_helper.get_info_by_manager(db, current_user.manager)
         return CustomResponse(data=response)
 
     async def get_by_email(self, db: Session, data: dict):
@@ -122,6 +122,7 @@ class BusinessService:
         )
 
     async def update(self, db: Session, data: dict, current_user: Account):
+        print(data)
         business_data = BusinessUpdateRequest(**data)
 
         location_helper.check_valid_province_district(

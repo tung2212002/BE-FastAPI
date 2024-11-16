@@ -136,6 +136,7 @@ class BusinessItemResponse(BaseModel):
     id: int
     full_name: str
     email: str
+    phone_number: Optional[str] = None
     avatar: Optional[str] = None
     is_active: bool
     role: Role
