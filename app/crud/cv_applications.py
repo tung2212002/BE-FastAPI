@@ -24,8 +24,8 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
         limit=10,
         sort_by: SortBy = SortBy.CREATED_AT,
         user_id: int,
-        status: CVApplicationStatus,
-        **kwargs
+        status: CVApplicationStatus = None,
+        **kwargs,
     ) -> List[CVApplication]:
         query = db.query(self.model)
         if status:
@@ -59,10 +59,10 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
         *,
         skip=0,
         limit=10,
-        sort_by: SortBy = SortBy.CREATED_AT,
+        sort_by: SortBy = SortBy.UPDATED_AT,
         order_by: OrderType = OrderType.DESC,
         campaign_id: int,
-        status: CVApplicationStatus
+        status: CVApplicationStatus = None,
     ) -> List[CVApplication]:
         query = db.query(self.model)
         if status:
@@ -83,7 +83,7 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
         )
 
     def count_by_campaign_id(
-        self, db: Session, campaign_id: int, status: CVApplicationStatus
+        self, db: Session, campaign_id: int, status: CVApplicationStatus = None
     ) -> int:
         query = db.query(func.count(self.model.id))
         if status:
@@ -94,7 +94,7 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
             query = query.filter(self.model.campaign_id == campaign_id)
         return query.scalar()
 
-    def count(self, db: Session, status: CVApplicationStatus) -> int:
+    def count(self, db: Session, status: CVApplicationStatus = None) -> int:
         query = db.query(func.count(self.model.id))
         if status:
             query = query.filter(self.model.status == status)
@@ -108,7 +108,7 @@ class CRUDCVApplication(CRUDBase[Job, CVApplicationCreate, CVApplicationUpdate])
         limit=10,
         sort_by: SortBy = SortBy.CREATED_AT,
         order_by: OrderType = OrderType.DESC,
-        status: CVApplicationStatus
+        status: CVApplicationStatus = None,
     ) -> List[CVApplication]:
         query = db.query(self.model)
         if status:

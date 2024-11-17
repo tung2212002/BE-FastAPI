@@ -130,6 +130,8 @@ class CompanyItemGeneralResponse(BaseModel):
     name: str
     type: CompanyType
     phone_number: str
+    email: str
+    company_short_description: Optional[str] = None
     is_premium: bool
     label: Optional[object] = None
     logo: Optional[str] = None
@@ -149,6 +151,11 @@ class CompanyItemGeneralResponse(BaseModel):
     def validate_banner(cls, v):
         return SchemaValidator.validate_logo(v)
 
+    @validator("company_short_description")
+    def validate_company_short_description(cls, v):
+        print("v", v)
+        return SchemaValidator.validate_json_loads(v)
+
 
 class CompanyItemResponse(CompanyItemGeneralResponse):
     fields: List[FieldItemResponse]
@@ -167,6 +174,8 @@ class CompanyPrivateResponse(BaseModel):
     is_premium: bool
     label: Optional[object] = None
     logo: Optional[str] = None
+    description: Optional[str] = None
+    company_short_description: Optional[str] = None
     website: Optional[str] = None
     address: str
     company_short_description: Optional[str] = None
@@ -185,6 +194,7 @@ class CompanyPrivateResponse(BaseModel):
 
     @validator("company_short_description")
     def validate_company_short_description(cls, v):
+        print("v", v)
         return SchemaValidator.validate_json_loads(v)
 
     @validator("banner")
