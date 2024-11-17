@@ -300,8 +300,9 @@ class SchemaValidator:
 
     @staticmethod
     def validate_full_name(v):
-        if not re.match(constant.REGEX_FULL_NAME, v):
-            raise ValueError("Invalid full name")
+        if v:
+            if not re.match(constant.REGEX_FULL_NAME, v):
+                raise ValueError("Invalid full name")
         return v
 
     @staticmethod

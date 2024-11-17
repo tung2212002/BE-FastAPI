@@ -18,6 +18,7 @@ from app.schema.skill import SkillItemResponse
 from app.schema.category import CategoryItemResponse
 from app.schema.working_time import WorkingTimeResponse
 from app.schema.work_location import WorkLocatioResponse
+from app.schema.user import UserBasicResponse
 
 
 class JobBase(BaseModel):
@@ -380,6 +381,7 @@ class CVApplicationInfoResponse(BaseModel):
     created_at: datetime
     cv: str
     count_apply: int
+    user: UserBasicResponse
 
     @validator("cv")
     def validate_cv(cls, v):
