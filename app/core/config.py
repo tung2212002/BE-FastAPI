@@ -81,6 +81,9 @@ class Settings(BaseSettings):
     REDIS_MAX_CONNECTIONS: int = Field(default=10)
     # Logging information
     LOG_LEVEL: int = Field(default=10)
+    # Celery information
+    CELERY_BROKER_URL: str = Field(default=f"redis:${REDIS_HOST}:${REDIS_PORT}/0")
+    CELERY_RESULT_BACKEND: str = Field(default=f"redis:${REDIS_HOST}:${REDIS_PORT}/1")
 
 
 settings = Settings()
