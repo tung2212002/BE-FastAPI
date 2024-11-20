@@ -19,3 +19,6 @@ fastapi-limiter==0.1.6
 websockets==13.1
 celery==5.4.0
 aio-pika==9.4.3
+celery[redis]
+celery[beat]
+flower==2.0.1
