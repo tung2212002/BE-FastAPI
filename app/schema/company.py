@@ -153,7 +153,6 @@ class CompanyItemGeneralResponse(BaseModel):
 
     @validator("company_short_description")
     def validate_company_short_description(cls, v):
-        print("v", v)
         return SchemaValidator.validate_json_loads(v)
 
 
@@ -194,7 +193,6 @@ class CompanyPrivateResponse(BaseModel):
 
     @validator("company_short_description")
     def validate_company_short_description(cls, v):
-        print("v", v)
         return SchemaValidator.validate_json_loads(v)
 
     @validator("banner")
