@@ -55,6 +55,10 @@ from app.core.category.category_helper import category_helper
 from app.core.auth.business_auth_helper import business_auth_helper
 from app.core.campaign.campaign_helper import campaign_helper
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
+from app.core.job_approval_requests.job_approval_request_helper import (
+    job_approval_request_helper,
+)
+
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
 
@@ -266,17 +270,13 @@ class JobService:
             )
 
         if (
-            (
-                job.business_id != current_user.id
-                or job.campaign.company_id != company.id
-            )
-            and current_user.role
-            not in [
-                Role.SUPER_USER,
-                Role.ADMIN,
-            ]
+            job.business_id != current_user.id
+            or job.campaign.company_id != company.id
             or not company
-        ):
+        ) and current_user.role not in [
+            Role.SUPER_USER,
+            Role.ADMIN,
+        ]:
             raise CustomException(
                 status_code=status.HTTP_403_FORBIDDEN, msg="Permission denied"
             )
@@ -563,6 +563,12 @@ class JobService:
             working_times=job_data.working_times,
         )
         job_response = await job_helper.get_info(db, redis, job)
+
+        job_approval_request_helper.create(
+            db,
+            job_id=job.id,
+            status=JobApprovalStatus.PENDING,
+        )
 
         return CustomResponse(status_code=status.HTTP_201_CREATED, data=job_response)
 

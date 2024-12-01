@@ -16,7 +16,7 @@ from app.hepler.enum import (
 router = APIRouter()
 
 
-@router.get("/", summary="Get list of approve request job.")
+@router.get("", summary="Get list of approve request job.")
 async def get_list_approve_request_job(
     db: Session = Depends(get_db),
     current_user=Depends(user_manager_service.get_current_admin),
@@ -87,11 +87,11 @@ async def get_approve_request_job_by_id(
     )
 
 
-@router.put("/{job_approval_request_id}/approve", summary="Approve job.")
+@router.put("/{job_id}/approve", summary="Approve job.")
 async def approve_job_request_by_id(
     db: Session = Depends(get_db),
     current_user=Depends(user_manager_service.get_current_admin),
-    job_approval_request_id: int = Path(..., description="The job id.", example=1),
+    job_id: int = Path(..., description="The job id.", example=1),
     data: dict = Body(
         ...,
         description="The data to approve job.",
@@ -104,7 +104,7 @@ async def approve_job_request_by_id(
     This endpoint allows approve job.
 
     Parameters:
-    - job_approval_request_id (int): The job id.
+    - job_id (int): The job id.
     - data (dict): The data to approve job.
 
     Returns:
@@ -117,7 +117,7 @@ async def approve_job_request_by_id(
     return await job_approval_request_service.approve(
         db,
         current_user=current_user,
-        data={"job_approval_request_id": job_approval_request_id, **data},
+        data={"job_id": job_id, **data},
     )
 
 

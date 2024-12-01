@@ -34,6 +34,12 @@ class JobApprovalFilter(Pagination):
 
 
 # schema
+class JobApprovalCreate(BaseModel):
+    job_id: int
+    status: JobApprovalStatus = JobApprovalStatus.PENDING
+    data: Optional[Any] = None
+
+
 class JobApprovalRequestCreate(BaseModel):
     title: Optional[str] = None
     max_salary: Optional[int] = None
