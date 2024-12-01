@@ -8,7 +8,9 @@ from app.model import ApprovalLog
 
 
 class JobApprovalLogHelper:
-    def create_job_approval_log(db: Session, data: JobApprovalLogCreate) -> ApprovalLog:
+    def create_job_approval_log(
+        self, db: Session, data: JobApprovalLogCreate
+    ) -> ApprovalLog:
         job_approval_log = job_approval_logCRUD.create(db, obj_in=data)
         return job_approval_log
 
