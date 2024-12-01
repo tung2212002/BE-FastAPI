@@ -127,7 +127,7 @@ class JobUpdateRequest(BaseModel):
 
 
 class JobApproveRequest(BaseModel):
-    job_approval_request_id: int
+    job_id: int
     status: AdminJobApprovalStatus
     reason: Optional[str] = None
 

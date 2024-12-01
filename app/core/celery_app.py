@@ -14,7 +14,7 @@ celery_app.config_from_object("app.core.celery_config")
 celery_app.conf.beat_schedule = {
     "periodic-task-example": {
         "task": "app.tasks.data_statistics.scan_task",
-        "schedule": crontab(minute=0, hour="*/3"),
+        "schedule": crontab(minute=0, hour="*/1"),
         "args": ("Scheduled Task",),
     }
 }

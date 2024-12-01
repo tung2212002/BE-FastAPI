@@ -4,6 +4,8 @@ from datetime import datetime
 
 from app.hepler.enum import CampaignStatus, FilterCampaign
 from app.schema.page import Pagination
+from app.schema.business import BusinessBasicInfoResponse
+from app.schema.company import CompanyItemGeneralResponse
 from app.hepler.schema_validator import SchemaValidator
 
 
@@ -134,6 +136,8 @@ class CampaignItemResponse(CampaignBase):
     status: Optional[CampaignStatus] = CampaignStatus.OPEN
     optimal_score: Optional[int] = 0
     job: Optional[dict] = None
+    business: Optional[BusinessBasicInfoResponse] = None
+    company: Optional[CompanyItemGeneralResponse] = None
 
     @validator("status")
     def validate_status(cls, v):
