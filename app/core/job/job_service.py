@@ -281,7 +281,7 @@ class JobService:
                 status_code=status.HTTP_403_FORBIDDEN, msg="Permission denied"
             )
 
-        response = await job_helper.get_info(db, redis, job)
+        response = await job_helper.get_info_business(db, redis, job)
 
         return CustomResponse(data=response)
 
@@ -452,9 +452,6 @@ class JobService:
         if not response:
             number_of_job_24h = await job_cache_service.get_cache_count_job_24h(redis)
             if not number_of_job_24h:
-                # number_of_job_24h = jobCRUD.user_count(
-                #     db, **params.model_dump(), approved_time=approved_time
-                # )
                 work_market_data = work_marketCRUD.get_lastest(db)
                 if work_market_data:
                     number_of_job_24h = work_market_data.quantity_job_new_today
@@ -469,11 +466,12 @@ class JobService:
                 redis
             )
             if not number_of_job_active:
-                # number_of_job_active = jobCRUD.user_count(
-                #     db,
-                #     **params.model_dump(),
-                # )
-                number_of_job_active = work_market_data.quantity_job_recruitment
+                if work_market_data:
+                    number_of_job_active = work_market_data.quantity_job_recruitment
+                else:
+                    work_market_data = work_marketCRUD.get_lastest(db)
+                    if work_market_data:
+                        number_of_job_active = work_market_data.quantity_job_recruitment
                 try:
                     await job_cache_service.cache_count_job_active(
                         redis, number_of_job_active
@@ -484,8 +482,16 @@ class JobService:
                 await job_cache_service.get_cache_count_job_active(redis)
             )
             if not number_of_company_active:
-                # number_of_company_active = jobCRUD.count_company_active_job(db)
-                number_of_company_active = work_market_data.quantity_company_recruitment
+                if work_market_data:
+                    number_of_company_active = (
+                        work_market_data.quantity_company_recruitment
+                    )
+                else:
+                    work_market_data = work_marketCRUD.get_lastest(db)
+                    if work_market_data:
+                        number_of_company_active = (
+                            work_market_data.quantity_company_recruitment
+                        )
                 try:
                     await job_cache_service.cache_count_job_active(
                         redis, number_of_company_active
