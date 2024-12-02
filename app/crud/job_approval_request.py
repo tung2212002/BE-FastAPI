@@ -30,6 +30,14 @@ class CRUDJobApprovalRequest(
             .all()
         )
 
+    def get_last_by_job_id(self, db, job_id: int) -> JobApprovalRequest:
+        return (
+            db.query(self.model)
+            .filter(self.model.job_id == job_id)
+            .order_by(self.model.id.desc())
+            .first()
+        )
+
     def get_multi(
         self,
         db: Session,

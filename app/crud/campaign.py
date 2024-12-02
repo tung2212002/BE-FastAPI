@@ -157,10 +157,10 @@ class CRUDCampaign(CRUDBase[Campaign, CampaignCreate, CampaignUpdate]):
         return result
 
     def count_has_new_application(
-        self, db: Session, *, business_id: int = None, Company_id: int = None, **kwargs
+        self, db: Session, *, business_id: int = None, company_id: int = None, **kwargs
     ) -> int:
         query = db.query(func.count(self.model.id))
-        query = self.apply_filter(query, business_id=business_id, company_id=Company_id)
+        query = self.apply_filter(query, business_id=business_id, company_id=company_id)
         query = query.join(Job).filter(
             Job.status == JobStatus.PUBLISHED, Job.deadline >= func.now()
         )

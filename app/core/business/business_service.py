@@ -125,9 +125,10 @@ class BusinessService:
         print(data)
         business_data = BusinessUpdateRequest(**data)
 
-        location_helper.check_valid_province_district(
-            db, business_data.province_id, business_data.district_id
-        )
+        if business_data.province_id:
+            location_helper.check_valid_province_district(
+                db, business_data.province_id, business_data.district_id
+            )
 
         avatar = business_data.avatar
         if avatar:

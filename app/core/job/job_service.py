@@ -26,6 +26,7 @@ from app.crud import (
     job_approval_request as job_approval_requestCRUD,
     campaign as campaignCRUD,
     cv_applications as cv_applicationCRUD,
+    work_market as work_marketCRUD,
 )
 from app.core import constant
 from app.hepler.enum import (
@@ -39,13 +40,25 @@ from app.hepler.enum import (
 from app.core.job_approval_requests import job_approval_request_helper
 from app.storage.cache.job_cache_service import job_cache_service
 from app.hepler.common import CommonHelper
-from app.model import Manager, Account, Business, Company, Job, CVApplication
+from app.model import (
+    Manager,
+    Account,
+    Business,
+    Company,
+    Job,
+    CVApplication,
+    WorkMarket,
+)
 from app.core.location.location_helper import location_helper
 from app.core.job.job_helper import job_helper
 from app.core.category.category_helper import category_helper
 from app.core.auth.business_auth_helper import business_auth_helper
 from app.core.campaign.campaign_helper import campaign_helper
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
+from app.core.job_approval_requests.job_approval_request_helper import (
+    job_approval_request_helper,
+)
+
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
 
@@ -257,22 +270,18 @@ class JobService:
             )
 
         if (
-            (
-                job.business_id != current_user.id
-                or job.campaign.company_id != company.id
-            )
-            and current_user.role
-            not in [
-                Role.SUPER_USER,
-                Role.ADMIN,
-            ]
+            job.business_id != current_user.id
+            or job.campaign.company_id != company.id
             or not company
-        ):
+        ) and current_user.role not in [
+            Role.SUPER_USER,
+            Role.ADMIN,
+        ]:
             raise CustomException(
                 status_code=status.HTTP_403_FORBIDDEN, msg="Permission denied"
             )
 
-        response = await job_helper.get_info(db, redis, job)
+        response = await job_helper.get_info_business(db, redis, job)
 
         return CustomResponse(data=response)
 
@@ -433,6 +442,7 @@ class JobService:
             job_status=JobStatus.PUBLISHED,
             job_approve_status=JobApprovalStatus.APPROVED,
         )
+        work_market_data: WorkMarket = None
 
         try:
             response = await job_cache_service.get_cache_job_cruiment_demand(redis)
@@ -442,9 +452,9 @@ class JobService:
         if not response:
             number_of_job_24h = await job_cache_service.get_cache_count_job_24h(redis)
             if not number_of_job_24h:
-                number_of_job_24h = jobCRUD.user_count(
-                    db, **params.model_dump(), approved_time=approved_time
-                )
+                work_market_data = work_marketCRUD.get_lastest(db)
+                if work_market_data:
+                    number_of_job_24h = work_market_data.quantity_job_new_today
                 try:
                     await job_cache_service.cache_count_job_24h(
                         redis, number_of_job_24h
@@ -456,10 +466,12 @@ class JobService:
                 redis
             )
             if not number_of_job_active:
-                number_of_job_active = jobCRUD.user_count(
-                    db,
-                    **params.model_dump(),
-                )
+                if work_market_data:
+                    number_of_job_active = work_market_data.quantity_job_recruitment
+                else:
+                    work_market_data = work_marketCRUD.get_lastest(db)
+                    if work_market_data:
+                        number_of_job_active = work_market_data.quantity_job_recruitment
                 try:
                     await job_cache_service.cache_count_job_active(
                         redis, number_of_job_active
@@ -470,7 +482,16 @@ class JobService:
                 await job_cache_service.get_cache_count_job_active(redis)
             )
             if not number_of_company_active:
-                number_of_company_active = jobCRUD.count_company_active_job(db)
+                if work_market_data:
+                    number_of_company_active = (
+                        work_market_data.quantity_company_recruitment
+                    )
+                else:
+                    work_market_data = work_marketCRUD.get_lastest(db)
+                    if work_market_data:
+                        number_of_company_active = (
+                            work_market_data.quantity_company_recruitment
+                        )
                 try:
                     await job_cache_service.cache_count_job_active(
                         redis, number_of_company_active
@@ -548,6 +569,12 @@ class JobService:
             working_times=job_data.working_times,
         )
         job_response = await job_helper.get_info(db, redis, job)
+
+        job_approval_request_helper.create(
+            db,
+            job_id=job.id,
+            status=JobApprovalStatus.PENDING,
+        )
 
         return CustomResponse(status_code=status.HTTP_201_CREATED, data=job_response)
 

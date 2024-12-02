@@ -25,7 +25,7 @@ class AccountCreate(BaseModel):
 
 
 class AccountUpdate(BaseModel):
-    full_name: str
+    full_name: Optional[str] = None
     avatar: Optional[str] = None
 
     model_config = ConfigDict(from_attribute=True, extra="ignore")

@@ -30,6 +30,7 @@ router = APIRouter()
 async def get_job(
     request: Request,
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     current_user=Depends(user_manager_service.get_current_business_admin_superuser),
     skip: int = Query(None, description="The number of users to skip.", example=0),
     limit: int = Query(None, description="The number of users to return.", example=10),
@@ -72,7 +73,7 @@ async def get_job(
     """
     args = {item[0]: item[1] for item in request.query_params.multi_items()}
 
-    return await job_service.get_by_business(db, {**args}, current_user)
+    return await job_service.get_by_business(db, redis, {**args}, current_user)
 
 
 @router.get("/search", summary="Search list of job.")
@@ -153,6 +154,7 @@ async def search_job(
 @router.get("/{job_id}", summary="Get job by id.")
 async def get_job_by_id(
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     current_user=Depends(user_manager_service.get_current_business_admin_superuser),
     job_id: int = Path(
         ...,
@@ -174,7 +176,7 @@ async def get_job_by_id(
     - status_code (404): The job is not found.
 
     """
-    return await job_service.get_by_id_for_business(db, job_id, current_user)
+    return await job_service.get_by_id_for_business(db, redis, job_id, current_user)
 
 
 @router.post("", summary="Create a new job.")
@@ -244,6 +246,7 @@ async def create_job(
 @router.put("/{job_id}", summary="Update a new job.")
 async def Update_job(
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     current_user=Depends(user_manager_service.get_current_business),
     job_id: int = Path(
         ...,
@@ -305,7 +308,7 @@ async def Update_job(
     - status_code (404): The job is not found.
 
     """
-    return await job_service.update(db, {**data, "job_id": job_id}, current_user)
+    return await job_service.update(db, redis, {**data, "job_id": job_id}, current_user)
 
 
 @router.delete("/{job_id}", summary="Delete a job.")

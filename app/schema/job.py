@@ -13,6 +13,7 @@ from app.hepler.enum import (
     AdminJobApprovalStatus,
     CVApplicationStatus,
 )
+from app.schema.job_approval_log import JobApprovalLogResponse
 from app.hepler.schema_validator import SchemaValidator
 from app.schema.skill import SkillItemResponse
 from app.schema.category import CategoryItemResponse
@@ -127,7 +128,7 @@ class JobUpdateRequest(BaseModel):
 
 
 class JobApproveRequest(BaseModel):
-    job_approval_request_id: int
+    job_id: int
     status: AdminJobApprovalStatus
     reason: Optional[str] = None
 
@@ -414,6 +415,48 @@ class JobItemResponse(JobBase):
     should_have_skills: List[object]
     company: object
     cv_application: Optional[CVApplicationInfoResponse] = None
+
+    @validator("email_contact")
+    def validate_email_contact(cls, v):
+        return SchemaValidator.validate_json_loads(v)
+
+    @validator("job_description")
+    def validate_job_description(cls, v):
+        return SchemaValidator.validate_json_loads(v)
+
+    @validator("job_requirement")
+    def validate_job_requirement(cls, v):
+        return SchemaValidator.validate_json_loads(v)
+
+    @validator("job_benefit")
+    def validate_job_benefit(cls, v):
+        return SchemaValidator.validate_json_loads(v)
+
+
+class JobBusinessItemResponse(JobBase):
+    id: int
+    updated_at: Optional[datetime] = None
+    created_at: datetime
+    is_featured: bool = False
+    is_highlight: bool = False
+    is_urgent: bool = False
+    is_paid_featured: bool = False
+    is_bg_featured: bool = False
+    is_vip_employer: bool = False
+    is_diamond_employer: bool = False
+    is_job_flash: bool = False
+    employer_verified: bool = False
+    is_new: bool = False
+    is_hot: bool = False
+    email_contact: Any
+    status: JobStatus
+    locations: List[object]
+    categories: List[object]
+    working_times: List[object]
+    must_have_skills: List[object]
+    should_have_skills: List[object]
+    company: object
+    job_log: Optional[JobApprovalLogResponse] = None
 
     @validator("email_contact")
     def validate_email_contact(cls, v):
