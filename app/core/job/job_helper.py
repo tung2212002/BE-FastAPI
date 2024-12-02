@@ -4,10 +4,13 @@ from typing import Union, List
 
 from app.schema.job import (
     JobItemResponse,
+    JobBusinessItemResponse,
     JobItemResponseGeneral,
     JobSearchByUser,
 )
 from app.schema.job import CVApplicationInfoResponse
+from app.schema.job_approval_request import JobApprovalRequestResponse
+from app.schema.job_approval_log import JobApprovalLogResponse
 from app.crud import (
     job as jobCRUD,
     company as companyCRUD,
@@ -22,6 +25,10 @@ from app.core.job_position.job_position_hepler import job_position_helper
 from app.core.skill.skill_helper import skill_helper
 from app.core.category.category_helper import category_helper
 from app.core.work_locations.work_locations_hepler import work_location_helper
+from app.core.job_approval_requests.job_approval_request_helper import (
+    job_approval_request_helper,
+)
+from app.core.job_approval_log.job_approval_log_helper import job_approval_log_helper
 from app.core.company.company_helper import company_helper
 from app.hepler.enum import JobSkillType
 
@@ -110,6 +117,21 @@ class JobHepler:
         except Exception as e:
             print(e)
         return job_response
+
+    async def get_info_business(
+        self, db: Session, redis: Redis, job: Job
+    ) -> JobBusinessItemResponse:
+        job = await self.get_info(db, redis, job)
+        job_approval_request: JobApprovalRequestResponse = (
+            job_approval_request_helper.get_by_job_id(db, job.id)
+        )
+        job_log: JobApprovalLogResponse = (
+            job_approval_log_helper.get_by_job_approval_id(db, job_approval_request.id)
+        )
+        return JobBusinessItemResponse(
+            **job.__dict__,
+            job_log=job_log,
+        )
 
     def get_info_general(self, job: Job) -> JobItemResponseGeneral:
         job_response = JobItemResponseGeneral(
