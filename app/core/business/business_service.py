@@ -122,6 +122,7 @@ class BusinessService:
         )
 
     async def update(self, db: Session, data: dict, current_user: Account):
+        print(data)
         business_data = BusinessUpdateRequest(**data)
 
         if business_data.province_id:

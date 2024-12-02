@@ -8,6 +8,7 @@ from app.hepler.enum import CampaignStatus
 from app.core.business.business_helper import business_helper
 from app.core.company.company_helper import company_helper
 from app.core.job.job_helper import job_helper
+from app.core.cv_applications.cv_applications_helper import cv_applications_helper
 from app.model import Campaign, Business, Company
 from app.schema.campaign import (
     CampaignItemResponse,
@@ -20,6 +21,7 @@ from app.schema.campaign import (
     CampaignGetHasPendingJobPagination,
     CountGetListStatusPagination,
 )
+from app.schema.job import CVApplicationInfoResponse
 from app.schema.business import BusinessBasicInfoResponse
 from app.schema.company import CompanyItemGeneralResponse
 from app.common.exception import CustomException
@@ -78,6 +80,11 @@ class CampaignHelper:
                 if k not in ["job", "company", "business"]
             },
             job=job.model_dump() if job else None,
+            latest_cvs=(
+                cv_applications_helper.list_info_by_campaign_id(db, campaign.id, 0, 5)
+                if campaign.count_apply > 0
+                else []
+            )
             business=business_helper.get_basic_info_by_business(db, business),
             company=company_helper.get_info_general(company),
         )

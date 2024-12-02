@@ -13,6 +13,11 @@ services:
       - tvnow-mysql-data:/var/lib/mysql
     ports:
       - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - tvnow-network
     healthcheck:
@@ -72,6 +77,11 @@ services:
       - ./docker-compose/nginx:/etc/nginx/conf.d/
     depends_on:
       - tvnow-api
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - tvnow-network
 

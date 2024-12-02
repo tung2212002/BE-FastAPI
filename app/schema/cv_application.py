@@ -12,6 +12,7 @@ from app.schema.page import Pagination
 from app.hepler.schema_validator import SchemaValidator
 from app.schema.job import JobItemResponseGeneral
 from app.schema.company import CompanyItemGeneralResponse
+from app.schema.user import UserBasicResponse
 
 
 class CVApplicationBase(BaseModel):
@@ -116,6 +117,7 @@ class CVApplicationUserItemResponse(CVApplicationBase):
     size: int
     type: AttachmentType
     count_apply: int
+    user: UserBasicResponse
 
     @validator("cv")
     def validate_cv(cls, v):
@@ -132,6 +134,7 @@ class CVApplicationGeneralResponse(CVApplicationBase):
     size: int
     type: AttachmentType
     count_apply: int
+    user: UserBasicResponse
 
     @validator("cv")
     def validate_cv(cls, v):
