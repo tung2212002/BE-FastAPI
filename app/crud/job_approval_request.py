@@ -1,3 +1,4 @@
+from sqlalchemy.sql import func
 from typing import List
 from sqlalchemy.orm import Session
 from app.crud.base import CRUDBase
@@ -27,14 +28,22 @@ class CRUDJobApprovalRequest(
                 self.model.job_id == job_id,
                 self.model.status == JobApprovalStatus.PENDING,
             )
-            .all()
+            .first()
         )
 
     def get_last_by_job_id(self, db, job_id: int) -> JobApprovalRequest:
         return (
             db.query(self.model)
             .filter(self.model.job_id == job_id)
-            .order_by(self.model.id.desc())
+            .order_by(self.model.created_at.desc())
+            .first()
+        )
+
+    def get_first_by_job_id(self, db, job_id: int) -> JobApprovalRequest:
+        return (
+            db.query(self.model)
+            .filter(self.model.job_id == job_id)
+            .order_by(self.model.created_at.asc())
             .first()
         )
 
@@ -83,6 +92,15 @@ class CRUDJobApprovalRequest(
         if status:
             query = query.filter(self.model.status == status)
         return query
+
+    def update_job(
+        self, db: Session, job_approval_request: JobApprovalRequest
+    ) -> JobApprovalRequest:
+        job_approval_request.updated_at = func.now()
+        db.add(job_approval_request)
+        db.commit()
+        db.refresh(job_approval_request)
+        return job_approval_request
 
 
 job_approval_request = CRUDJobApprovalRequest(JobApprovalRequest)
