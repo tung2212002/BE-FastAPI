@@ -84,7 +84,7 @@ class CampaignHelper:
                 cv_applications_helper.list_info_by_campaign_id(db, campaign.id, 0, 5)
                 if campaign.count_apply > 0
                 else []
-            )
+            ),
             business=business_helper.get_basic_info_by_business(db, business),
             company=company_helper.get_info_general(company),
         )
@@ -182,6 +182,21 @@ class CampaignHelper:
 
         return (
             campaignCRUD.get_has_pending_job(db, **multi_paigination.model_dump()),
+            count,
+        )
+
+    def get_list_campaign_empty_job(
+        self, db: Session, page: Union[dict, BaseModel]
+    ) -> Tuple[List[Campaign], int]:
+        multi_paigination = CampaignGetOnlyOpenPagination(**page.model_dump())
+        count_pagination = CountGetListStatusPagination(**page.model_dump())
+
+        count = campaignCRUD.count_empty_job(db, **count_pagination.model_dump())
+        if count < multi_paigination.skip:
+            return [], count
+
+        return (
+            campaignCRUD.get_empty_job(db, **multi_paigination.model_dump()),
             count,
         )
 

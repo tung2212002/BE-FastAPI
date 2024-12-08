@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from redis.asyncio import Redis
 from typing import Union, List
+from fastapi import status
 
 from app.schema.job import (
     JobItemResponse,
@@ -8,19 +9,33 @@ from app.schema.job import (
     JobItemResponseGeneral,
     JobSearchByUser,
 )
-from app.schema.job import CVApplicationInfoResponse
-from app.schema.job_approval_request import JobApprovalRequestResponse
-from app.schema.job_approval_log import JobApprovalLogResponse
+from app.schema.job import CVApplicationInfoResponse, JobUpdate, JobUpdateRequest
+from app.schema.job_approval_request import (
+    JobApprovalRequestResponse,
+    JobApprovalRequestCreate,
+)
+from app.schema.job_approval_log import JobApprovalLogResponse, JobApprovalLogCreate
 from app.crud import (
     job as jobCRUD,
     company as companyCRUD,
     cv_applications as cv_applicationCRUD,
+    job_approval_request as job_approval_requestCRUD,
 )
+from app.schema.user import UserBasicResponse
 from app.core.working_times.working_times_helper import working_times_helper
 from app.storage.cache.job_cache_service import job_cache_service
-from app.model import Job, Account, CVApplication
+from app.model import (
+    Job,
+    Account,
+    CVApplication,
+    JobApprovalRequest,
+    Campaign,
+    JobApprovalLog,
+    Company,
+)
 from app.core.working_times.working_times_helper import working_times_helper
 from app.core.expericence.expericence_helper import experience_helper
+from app.core.user.user_helper import user_helper
 from app.core.job_position.job_position_hepler import job_position_helper
 from app.core.skill.skill_helper import skill_helper
 from app.core.category.category_helper import category_helper
@@ -30,7 +45,9 @@ from app.core.job_approval_requests.job_approval_request_helper import (
 )
 from app.core.job_approval_log.job_approval_log_helper import job_approval_log_helper
 from app.core.company.company_helper import company_helper
-from app.hepler.enum import JobSkillType
+from app.hepler.enum import JobSkillType, JobStatus, JobApprovalStatus
+from app.common.exception import CustomException
+from app.common.response import CustomResponse
 
 
 class JobHepler:
@@ -70,6 +87,27 @@ class JobHepler:
         working_times_helper.check_list_valid(db, working_times)
         experience_helper.check_valid(db, experience_id)
         job_position_helper.check_valid(db, position_id)
+
+    def update_fields(
+        self,
+        db: Session,
+        job_id: int,
+        *,
+        must_have_skills: list,
+        should_have_skills: list,
+        locations: list,
+        categories: list,
+        working_times: list,
+    ) -> None:
+        skill_helper.update_with_job_id(
+            db, job_id, must_have_skills, JobSkillType.MUST_HAVE
+        )
+        skill_helper.update_with_job_id(
+            db, job_id, should_have_skills, JobSkillType.SHOULD_HAVE
+        )
+        work_location_helper.update_with_job_id(db, job_id, locations)
+        category_helper.update_with_job_id(db, job_id, categories)
+        working_times_helper.update_with_job_id(db, job_id, working_times)
 
     async def get_info(
         self, db: Session, redis: Redis, job: Job, Schema=JobItemResponse
@@ -122,15 +160,16 @@ class JobHepler:
         self, db: Session, redis: Redis, job: Job
     ) -> JobBusinessItemResponse:
         job = await self.get_info(db, redis, job)
-        job_approval_request: JobApprovalRequestResponse = (
-            job_approval_request_helper.get_by_job_id(db, job.id)
+        job_approval_request = job_approval_request_helper.get_info_by_job_id(
+            db, job.id
         )
-        job_log: JobApprovalLogResponse = (
-            job_approval_log_helper.get_by_job_approval_id(db, job_approval_request.id)
+        job_logs: List[JobApprovalLogResponse] = job_approval_log_helper.get_by_job_id(
+            db, job.id
         )
         return JobBusinessItemResponse(
             **job.__dict__,
-            job_log=job_log,
+            job_logs=job_logs,
+            last_approval_request=job_approval_request,
         )
 
     def get_info_general(self, job: Job) -> JobItemResponseGeneral:
@@ -175,8 +214,82 @@ class JobHepler:
         )
 
         if cv_application:
-            job.cv_application = CVApplicationInfoResponse(**cv_application.__dict__)
+            user: UserBasicResponse = user_helper.get_basic_info_by_account(db, account)
+            job.cv_application = CVApplicationInfoResponse(
+                **cv_application.__dict__, user=user
+            )
         return job
+
+    def has_permission(
+        self, job: Job, campaign: Campaign, company: Company, current_user: Account
+    ) -> bool:
+        return (
+            job.business_id == current_user.id
+            and company
+            and campaign.business_id == current_user.id
+            and campaign.company_id == company.id
+        )
+
+    def update_pending_job(
+        self,
+        db: Session,
+        job: Job,
+        job_data: JobUpdateRequest,
+        job_approval_request: JobApprovalRequest,
+    ):
+        job_data_in = JobUpdate(**job_data.model_dump())
+        jobCRUD.update(db, obj_in=job_data_in)
+        self.update_job_fields(db, job.id, job_data)
+        job_approval_requestCRUD.update_job(db, job_approval_request)
+
+    def handle_rejected_job(self, db: Session, job: Job, job_data: JobUpdateRequest):
+        job_data_in = JobUpdate(**job_data.model_dump(), status=JobStatus.PENDING)
+        jobCRUD.update(db, obj_in=job_data_in)
+        self.update_job_fields(db, job.id, job_data)
+        self.create_job_approval_request(
+            db, job, job_data, status=JobApprovalStatus.PENDING
+        )
+
+    def handle_stopped_job(
+        self,
+        db: Session,
+        job: Job,
+        job_data: JobUpdateRequest,
+        job_approval_request: JobApprovalRequest,
+    ):
+        if job_approval_request.status == JobApprovalStatus.APPROVED:
+            self.create_job_approval_request(
+                db, job, job_data, status=JobApprovalStatus.PENDING
+            )
+        else:
+            job_data_in = JobUpdate(**job_data.model_dump(), status=JobStatus.PENDING)
+            jobCRUD.update(db, obj_in=job_data_in)
+            self.update_job_fields(db, job.id, job_data)
+
+    def update_job_fields(self, db: Session, job_id: int, job_data: JobUpdateRequest):
+        self.update_fields(
+            db,
+            job_id=job_id,
+            must_have_skills=job_data.must_have_skills,
+            should_have_skills=job_data.should_have_skills,
+            locations=job_data.locations,
+            categories=job_data.categories,
+            working_times=job_data.working_times,
+        )
+
+    def create_job_approval_request(
+        self,
+        db: Session,
+        job: Job,
+        job_data: JobUpdateRequest,
+        status=JobApprovalStatus.PENDING,
+    ):
+        job_approval_request_in = JobApprovalRequestCreate(
+            job_id=job.id,
+            status=status,
+            data=job_data.model_dump(),
+        )
+        job_approval_requestCRUD.create(db, obj_in=job_approval_request_in)
 
 
 job_helper = JobHepler()

@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.crud import (
     job_approval_log as job_approval_logCRUD,
@@ -8,23 +9,38 @@ from app.model import ApprovalLog
 
 
 class JobApprovalLogHelper:
-    def create_job_approval_log(
-        self, db: Session, data: JobApprovalLogCreate
+    def create(
+        self,
+        db: Session,
+        id: int,
+        previous_status: str,
+        new_status: str,
+        admin_id: int,
+        reason: str,
     ) -> ApprovalLog:
-        job_approval_log = job_approval_logCRUD.create(db, obj_in=data)
+        job_approval_log = JobApprovalLogCreate(
+            **{
+                "job_approval_request_id": id,
+                "previous_status": previous_status,
+                "new_status": new_status,
+                "admin_id": admin_id,
+                "reason": reason,
+            }
+        )
+        job_approval_log: ApprovalLog = job_approval_logCRUD.create(
+            db, obj_in=job_approval_log
+        )
+
         return job_approval_log
 
-    def get_by_job_approval_id(
-        self, db: Session, job_approval_id: int
-    ) -> JobApprovalLogResponse:
-        job_approval_log: ApprovalLog = job_approval_logCRUD.get_by_job_approval_id(
-            db, job_approval_id
+    def get_by_job_id(self, db: Session, job_id: int) -> List[JobApprovalLogResponse]:
+        job_approval_logs: List[ApprovalLog] = job_approval_logCRUD.get_by_job_id(
+            db, job_id
         )
-        return (
+        return [
             JobApprovalLogResponse(**job_approval_log.__dict__)
-            if job_approval_log
-            else None
-        )
+            for job_approval_log in job_approval_logs
+        ]
 
 
 job_approval_log_helper = JobApprovalLogHelper()
