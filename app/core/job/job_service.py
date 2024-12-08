@@ -48,6 +48,8 @@ from app.model import (
     Job,
     CVApplication,
     WorkMarket,
+    JobApprovalRequest,
+    Campaign,
 )
 from app.core.location.location_helper import location_helper
 from app.core.job.job_helper import job_helper
@@ -104,7 +106,6 @@ class JobService:
 
         params = JobCount(**data)
         number_of_all_jobs = jobCRUD.count(db, **params.model_dump())
-
         response = {
             "count": number_of_all_jobs,
             "jobs": jobs,
@@ -263,15 +264,18 @@ class JobService:
         self, db: Session, redis: Redis, job_id: int, current_user: Account
     ):
         job = jobCRUD.get(db, job_id)
-        company = companyCRUD.get_by_business_id(db, current_user.id)
+
         if not job:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
             )
 
+        company = companyCRUD.get_by_business_id(db, current_user.id)
+        campaign: Campaign = job.campaign
+
         if (
             job.business_id != current_user.id
-            or job.campaign.company_id != company.id
+            or campaign.company_id != company.id
             or not company
         ) and current_user.role not in [
             Role.SUPER_USER,
@@ -294,9 +298,12 @@ class JobService:
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
             )
 
+        job_approval_request: JobApprovalRequest = (
+            job_approval_requestCRUD.get_first_by_job_id(db, job_id)
+        )
         if (
             job.status != JobStatus.PUBLISHED
-            or job.job_approval_request.status != JobApprovalStatus.APPROVED
+            or job_approval_request.status != JobApprovalStatus.APPROVED
         ):
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
@@ -554,7 +561,7 @@ class JobService:
         job_data_in = JobCreate(
             **job_data.model_dump(),
             business_id=current_user.id,
-            status=JobStatus.PENDING,
+            status=JobStatus.STOPPED,
             employer_verified=is_verified_company,
         )
 
@@ -570,29 +577,27 @@ class JobService:
         )
         job_response = await job_helper.get_info(db, redis, job)
 
-        job_approval_request_helper.create(
-            db,
-            job_id=job.id,
-            status=JobApprovalStatus.PENDING,
-        )
-
         return CustomResponse(status_code=status.HTTP_201_CREATED, data=job_response)
 
-    async def update(self, db: Session, data: dict, current_user: Account):
+    async def update(
+        self, db: Session, redis: Redis, data: dict, current_user: Account
+    ):
         job_data = JobUpdateRequest(**data)
 
-        job = jobCRUD.get(db, job_data.job_id)
+        job: Job = jobCRUD.get(db, job_data.job_id)
         if not job:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
             )
 
+        campaign: Campaign = job.campaign
         company: Company = companyCRUD.get_by_business_id(db, current_user.id)
-        if (
-            job.business_id != current_user.id
-            or not company
-            or job.campaign.business_id != current_user.id
-            or job.campaign.company_id != company.id
+
+        if not job_helper.has_permission(
+            job,
+            campaign,
+            company,
+            current_user,
         ):
             raise CustomException(
                 status_code=status.HTTP_403_FORBIDDEN, msg="Permission denied"
@@ -615,58 +620,53 @@ class JobService:
             position_id=job_data.job_position_id,
         )
 
-        job_approval_request_data = {
-            "work_locations": job_data.locations,
-            **job_data.model_dump(),
-        }
-        job_approval_request = JobApprovalRequestCreate(**job_approval_request_data)
-        job_approval_requests_pending_before = (
-            job_approval_requestCRUD.get_pending_by_job_id(db, job.id)
-        )
-        if job_approval_requests_pending_before:
-            for (
-                job_approval_request_pending_before
-            ) in job_approval_requests_pending_before:
-                job_approval_requestCRUD.remove(
-                    db, id=job_approval_request_pending_before.id
-                )
-        job_approval_request = (
-            job_approval_request_helper.create_job_update_approval_request(
-                db,
-                {
-                    **job_approval_request_data,
-                    "request": RequestApproval.UPDATE,
-                },
-            )
-        )
-        job_approval_request_response = JobApprovalRequestResponse(
-            **job_approval_request.__dict__
+        job_approval_request: JobApprovalRequest = (
+            job_approval_requestCRUD.get_first_by_job_id(db, job.id)
         )
 
+        if job.status == JobStatus.PENDING:
+            job_helper.update_job_fields(db, job.id, job_data)
+
+            job_approval_requestCRUD.update_job(db, job_approval_request)
+        elif job.status == JobStatus.REJECTED:
+            job_helper.handle_rejected_job(db, job, job_data)
+        elif job.status == JobStatus.BANNED:
+            return CustomResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                msg="Job is banned",
+            )
+        elif job.status == JobStatus.STOPPED:
+            if job_approval_request.status == JobApprovalStatus.APPROVED:
+                job_helper.handle_stopped_job(db, job, job_data, job_approval_request)
+        else:
+            job_helper.create_job_approval_request(
+                db, job, job_data, job_approval_request
+            )
+
         return CustomResponse(
-            status_code=status.HTTP_201_CREATED, data=job_approval_request_response
+            msg="Request update job success", status=status.HTTP_200_OK
         )
 
     async def delete(self, db: Session, job_id: int, current_user: Account):
         job = jobCRUD.get(db, job_id)
         company = companyCRUD.get_by_business_id(db, current_user.id)
+        campaign: Campaign = job.campaign
+
         if not job:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
             )
 
-        if (
-            not company
-            or job.business_id != current_user.id
-            or job.campaign.company_id != company.id
-        ):
+        if not job_helper.has_permission(job, campaign, company, current_user):
             raise CustomException(
                 status_code=status.HTTP_403_FORBIDDEN, msg="Permission denied"
             )
 
         response = jobCRUD.remove(db, id=job_id)
 
-        return CustomResponse(data=response)
+        return CustomResponse(
+            msg="Delete job success", status=status.HTTP_204_NO_CONTENT
+        )
 
 
 job_service = JobService()
