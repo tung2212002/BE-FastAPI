@@ -23,12 +23,8 @@ class CRUDJobLogRequest:
         db.refresh(db_obj)
         return db_obj
 
-    def get_by_job_approval_id(self, db: Session, job_approval_id: int) -> ApprovalLog:
-        return (
-            db.query(ApprovalLog)
-            .filter(ApprovalLog.job_approval_request_id == job_approval_id)
-            .first()
-        )
+    def get_by_job_id(self, db: Session, job_id: int) -> ApprovalLog:
+        return db.query(ApprovalLog).filter(ApprovalLog.job_id == job_id).all()
 
 
 job_approval_log = CRUDJobLogRequest()
