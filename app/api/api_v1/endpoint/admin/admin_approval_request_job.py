@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Body, Query, Path
 from sqlalchemy.orm import Session
+from redis.asyncio import Redis
 
 from app.db.base import get_db
+from app.storage.redis import get_redis
 from app.core.auth.user_manager_service import user_manager_service
 from app.core.job_approval_requests.job_approval_request_service import (
     job_approval_request_service,
@@ -87,11 +89,14 @@ async def get_approve_request_job_by_id(
     )
 
 
-@router.put("/{job_id}/approve", summary="Approve job.")
+@router.put("/{job_approval_request_id}/approve", summary="Approve job.")
 async def approve_job_request_by_id(
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     current_user=Depends(user_manager_service.get_current_admin),
-    job_id: int = Path(..., description="The job id.", example=1),
+    job_approval_request_id: int = Path(
+        ..., description="The approve request job id.", example=1
+    ),
     data: dict = Body(
         ...,
         description="The data to approve job.",
@@ -104,7 +109,7 @@ async def approve_job_request_by_id(
     This endpoint allows approve job.
 
     Parameters:
-    - job_id (int): The job id.
+    - job_approval_request_id (int): The approve request job id.
     - data (dict): The data to approve job.
 
     Returns:
@@ -116,14 +121,16 @@ async def approve_job_request_by_id(
     """
     return await job_approval_request_service.approve(
         db,
+        redis,
         current_user=current_user,
-        data={"job_id": job_id, **data},
+        data={"job_approval_request_id": job_approval_request_id, **data},
     )
 
 
 @router.put("/{job_approval_request_id}/job", summary="Approve update job.")
 async def approve_job_request_by_id(
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     current_user=Depends(user_manager_service.get_current_admin),
     job_approval_request_id: int = Path(..., description="The job id.", example=1),
     data: dict = Body(
@@ -150,6 +157,7 @@ async def approve_job_request_by_id(
     """
     return await job_approval_request_service.approve_update(
         db,
+        redis,
         current_user=current_user,
         data={"job_approval_request_id": job_approval_request_id, **data},
     )

@@ -577,6 +577,10 @@ class JobService:
         )
         job_response = await job_helper.get_info(db, redis, job)
 
+        job_helper.create_job_approval_request(
+            db, job, job_data, JobApprovalStatus.PENDING
+        )
+
         return CustomResponse(status_code=status.HTTP_201_CREATED, data=job_response)
 
     async def update(
@@ -640,8 +644,13 @@ class JobService:
                 job_helper.handle_stopped_job(db, job, job_data, job_approval_request)
         else:
             job_helper.create_job_approval_request(
-                db, job, job_data, job_approval_request
+                db, job, job_data, JobApprovalStatus.PENDING
             )
+
+        try:
+            await job_cache_service.delete_job_info(redis, job.id)
+        except Exception as e:
+            print(e)
 
         return CustomResponse(
             msg="Request update job success", status=status.HTTP_200_OK

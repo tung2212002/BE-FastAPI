@@ -3,13 +3,17 @@ from sqlalchemy.orm import Session
 from typing import Optional, Union, Tuple, List
 from pydantic import BaseModel
 
-from app.crud import campaign as campaignCRUD, company as companyCRUD
+from app.crud import (
+    campaign as campaignCRUD,
+    company as companyCRUD,
+    job_approval_request as job_approval_requestCRUD,
+)
 from app.hepler.enum import CampaignStatus
 from app.core.business.business_helper import business_helper
 from app.core.company.company_helper import company_helper
 from app.core.job.job_helper import job_helper
 from app.core.cv_applications.cv_applications_helper import cv_applications_helper
-from app.model import Campaign, Business, Company
+from app.model import Campaign, Business, Company, Job
 from app.schema.campaign import (
     CampaignItemResponse,
     CampaignGetMutilPagination,
@@ -24,6 +28,7 @@ from app.schema.campaign import (
 from app.schema.job import CVApplicationInfoResponse
 from app.schema.business import BusinessBasicInfoResponse
 from app.schema.company import CompanyItemGeneralResponse
+from app.schema.job_approval_request import JobApprovalRequestItemResponse
 from app.common.exception import CustomException
 
 
@@ -69,7 +74,8 @@ class CampaignHelper:
             return campaign
 
     def get_info(self, db: Session, campaign: Campaign) -> CampaignItemResponse:
-        job = job_helper.get_info_general(campaign.job) if campaign.job else None
+        job: Job = campaign.job
+        job_data = job_helper.get_info_general(campaign.job) if campaign.job else None
         business: Business = campaign.business
         company: Company = campaign.company
 
@@ -79,11 +85,18 @@ class CampaignHelper:
                 for k, v in campaign.__dict__.items()
                 if k not in ["job", "company", "business"]
             },
-            job=job.model_dump() if job else None,
+            job=job_data.model_dump() if job_data else None,
             latest_cvs=(
                 cv_applications_helper.list_info_by_campaign_id(db, campaign.id, 0, 5)
                 if campaign.count_apply > 0
                 else []
+            ),
+            lastest_approval_request=(
+                JobApprovalRequestItemResponse(
+                    **job_approval_requestCRUD.get_last_by_job_id(db, job.id).__dict__
+                )
+                if job
+                else None
             ),
             business=business_helper.get_basic_info_by_business(db, business),
             company=company_helper.get_info_general(company),
