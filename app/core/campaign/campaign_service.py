@@ -1,3 +1,4 @@
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from app.crud.campaign import campaign as campaignCRUD
@@ -9,11 +10,10 @@ from app.schema.campaign import (
     CampaignUpdateRequest,
 )
 from app.hepler.enum import Role, FilterCampaign
-from app.model import Manager, Account, Business, Company
+from app.model import Manager, Account, Business, Company, Campaign
 from app.core.campaign.campaign_helper import campaign_helper
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
-from fastapi import status
 
 
 filter_functions = {
@@ -31,6 +31,9 @@ filter_functions = {
         db, page
     ),
     FilterCampaign.WAITING_APPROVAL_JOB: lambda db, page: campaign_helper.get_list_campaign_has_pending_job(
+        db, page
+    ),
+    FilterCampaign.EMPTY_JOB: lambda db, page: campaign_helper.get_list_campaign_empty_job(
         db, page
     ),
 }

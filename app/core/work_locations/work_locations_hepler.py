@@ -56,7 +56,7 @@ class WorkLocationHepler:
         work_locationCRUD.remove_by_job_id(db, job_id)
 
         return [
-            self.update(
+            self.create(
                 db,
                 WorkLocatioUpdate(job_id=job_id, **work_location),
             )

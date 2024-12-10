@@ -70,22 +70,15 @@ class JobUpdateRequest(BaseModel):
     employment_type: JobType = None
     gender_requirement: Gender = None
     deadline: Optional[date] = None
-    is_featured: Optional[bool] = None
-    is_highlight: Optional[bool] = None
-    is_urgent: Optional[bool] = None
-    is_paid_featured: Optional[bool] = None
-    is_bg_featured: Optional[bool] = None
-    is_vip_employer: Optional[bool] = None
-    is_diamond_employer: Optional[bool] = None
     is_job_flash: Optional[bool] = None
     employer_verified: Optional[bool] = None
     working_time_text: Optional[str] = None
     quantity: Optional[int] = None
-    working_times: Optional[Any] = None
-    categories: Optional[Any] = None
-    locations: Optional[Any] = None
-    must_have_skills: Optional[Any] = None
-    should_have_skills: Optional[Any] = None
+    working_times: Optional[Any] = []
+    categories: Optional[Any] = []
+    locations: Optional[Any] = []
+    must_have_skills: Optional[Any] = []
+    should_have_skills: Optional[Any] = []
     job_experience_id: Optional[int] = None
     job_position_id: Optional[int] = None
     job_id: Optional[int] = None
@@ -128,7 +121,7 @@ class JobUpdateRequest(BaseModel):
 
 
 class JobApproveRequest(BaseModel):
-    job_id: int
+    job_approval_request_id: int
     status: AdminJobApprovalStatus
     reason: Optional[str] = None
 
@@ -357,18 +350,12 @@ class JobUpdate(BaseModel):
     employment_type: JobType = None
     gender_requirement: Gender = None
     deadline: Optional[date] = None
-    is_featured: Optional[bool] = None
-    is_highlight: Optional[bool] = None
-    is_urgent: Optional[bool] = None
-    is_paid_featured: Optional[bool] = None
-    is_bg_featured: Optional[bool] = None
-    is_vip_employer: Optional[bool] = None
-    is_diamond_employer: Optional[bool] = None
     is_job_flash: Optional[bool] = None
     employer_verified: Optional[bool] = None
     working_time_text: Optional[str] = None
     quantity: Optional[int] = None
     locations: Optional[List[object]] = None
+    status: Optional[JobStatus] = None
 
 
 # response
@@ -395,13 +382,6 @@ class JobItemResponse(JobBase):
     id: int
     updated_at: Optional[datetime] = None
     created_at: datetime
-    is_featured: bool = False
-    is_highlight: bool = False
-    is_urgent: bool = False
-    is_paid_featured: bool = False
-    is_bg_featured: bool = False
-    is_vip_employer: bool = False
-    is_diamond_employer: bool = False
     is_job_flash: bool = False
     employer_verified: bool = False
     is_new: bool = False
@@ -437,13 +417,6 @@ class JobBusinessItemResponse(JobBase):
     id: int
     updated_at: Optional[datetime] = None
     created_at: datetime
-    is_featured: bool = False
-    is_highlight: bool = False
-    is_urgent: bool = False
-    is_paid_featured: bool = False
-    is_bg_featured: bool = False
-    is_vip_employer: bool = False
-    is_diamond_employer: bool = False
     is_job_flash: bool = False
     employer_verified: bool = False
     is_new: bool = False
@@ -456,7 +429,8 @@ class JobBusinessItemResponse(JobBase):
     must_have_skills: List[object]
     should_have_skills: List[object]
     company: object
-    job_log: Optional[JobApprovalLogResponse] = None
+    job_logs: List[JobApprovalLogResponse] = []
+    last_approval_request: Optional[Any] = None
 
     @validator("email_contact")
     def validate_email_contact(cls, v):
@@ -479,13 +453,6 @@ class JobItemResponseGeneral(BaseModel):
     id: int
     updated_at: Optional[datetime] = None
     created_at: datetime
-    is_featured: bool = False
-    is_highlight: bool = False
-    is_urgent: bool = False
-    is_paid_featured: bool = False
-    is_bg_featured: bool = False
-    is_vip_employer: bool = False
-    is_diamond_employer: bool = False
     is_job_flash: bool = False
     employer_verified: bool = False
     is_new: bool = False
@@ -505,13 +472,6 @@ class JobItemResponseUser(BaseModel):
     id: int
     updated_at: Optional[datetime] = None
     created_at: datetime
-    is_featured: bool = False
-    is_highlight: bool = False
-    is_urgent: bool = False
-    is_paid_featured: bool = False
-    is_bg_featured: bool = False
-    is_vip_employer: bool = False
-    is_diamond_employer: bool = False
     is_job_flash: bool = False
     employer_verified: bool = False
     is_new: bool = False
@@ -556,16 +516,7 @@ class JobItemResponseUser(BaseModel):
 class JobSearchResponseUser(BaseModel):
     id: int
     updated_at: Optional[datetime] = None
-    is_featured: bool = False
-    is_highlight: bool = False
-    is_urgent: bool = False
-    is_paid_featured: bool = False
-    is_bg_featured: bool = False
-    is_vip_employer: bool = False
-    is_diamond_employer: bool = False
     is_job_flash: bool = False
-    is_new: bool = False
-    is_hot: bool = False
     locations: List[dict]
     company: object
     title: Optional[str] = None

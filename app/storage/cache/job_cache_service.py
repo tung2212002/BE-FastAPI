@@ -99,6 +99,9 @@ class JobCacheService(BaseCache):
             expire_time > 0 and expire_time or 60 * 60 * 24 * 7,
         )
 
+    async def delete_job_info(self, redis: Redis, key: int):
+        await self.delete(redis, self.job_info_key + str(key))
+
     async def get_cache_job_info(self, redis: Redis, key: int) -> JobItemResponse:
         response = await self.get(redis, self.job_info_key + str(key))
         return JobItemResponse(**json.loads(response)) if response else None

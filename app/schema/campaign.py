@@ -8,6 +8,7 @@ from app.schema.business import BusinessBasicInfoResponse
 from app.schema.company import CompanyItemGeneralResponse
 from app.hepler.schema_validator import SchemaValidator
 from app.schema.job import CVApplicationInfoResponse
+from app.schema.job_approval_request import JobApprovalRequestItemResponse
 
 
 class CampaignBase(BaseModel):
@@ -139,6 +140,7 @@ class CampaignItemResponse(CampaignBase):
     job: Optional[dict] = None
     count_apply: Optional[int] = 0
     latest_cvs: Optional[List[CVApplicationInfoResponse]] = []
+    lastest_approval_request: Optional[JobApprovalRequestItemResponse] = None
     business: Optional[BusinessBasicInfoResponse] = None
     company: Optional[CompanyItemGeneralResponse] = None
 

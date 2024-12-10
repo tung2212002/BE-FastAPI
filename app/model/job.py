@@ -55,13 +55,6 @@ class Job(Base):
     gender_requirement = Column(Enum(Gender), default=Gender.OTHER, index=True)
     deadline = Column(Date, nullable=False, index=True)
     employer_verified = Column(Boolean, default=False)
-    is_featured = Column(Boolean, default=False)
-    is_highlight = Column(Boolean, default=False)
-    is_urgent = Column(Boolean, default=False)
-    is_paid_featured = Column(Boolean, default=False)
-    is_bg_featured = Column(Boolean, default=False)
-    is_vip_employer = Column(Boolean, default=False)
-    is_diamond_employer = Column(Boolean, default=False)
     is_job_flash = Column(Boolean, default=False)
     working_time_text = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -98,6 +91,7 @@ class Job(Base):
         uselist=True,
         overlaps="must_have_skills,should_have_skills",
     )
+    approval_log = relationship("ApprovalLog", back_populates="job")
 
     __table_args__ = (
         Index(

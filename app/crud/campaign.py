@@ -287,6 +287,44 @@ class CRUDCampaign(CRUDBase[Campaign, CampaignCreate, CampaignUpdate]):
         result = query.scalar()
         return result
 
+    def count_empty_job(
+        self,
+        db: Session,
+        *,
+        business_id: int = None,
+        company_id: int = None,
+    ) -> int:
+        query = db.query(func.count(self.model.id))
+        query = self.apply_filter(
+            query,
+            business_id=business_id,
+            company_id=company_id,
+        )
+        query = query.join(Job).filter(Job.id == None)
+        result = query.scalar()
+        return result
+
+    def get_empty_job(
+        self,
+        db: Session,
+        *,
+        business_id: int = None,
+        company_id: int = None,
+        skip=0,
+        limit=10,
+        sort_by: SortBy = SortBy.ID,
+        order_by: OrderType = OrderType.DESC,
+    ) -> List[Campaign]:
+        query = db.query(self.model)
+        query = self.apply_filter(
+            query,
+            business_id=business_id,
+            company_id=company_id,
+        )
+        query = query.join(Job).filter(Job.id == None)
+        result = self.return_campaign(query, skip, limit, sort_by, order_by)
+        return result
+
     def apply_filter(
         self,
         query,

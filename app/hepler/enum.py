@@ -54,8 +54,6 @@ class JobStatus(str, Enum):
     PENDING = "pending"
     PUBLISHED = "published"
     REJECTED = "rejected"
-    EXPIRED = "expired"
-    DRAFT = "draft"
     BANNED = "banned"
     STOPPED = "stopped"
 
@@ -125,6 +123,7 @@ class FilterCampaign(str, Enum):
     HAS_RUNNING_SERVICE = "has_running_service"
     EXPIRED_JOB = "expired_job"
     WAITING_APPROVAL_JOB = "waiting_approval_job"
+    EMPTY_JOB = "empty_job"
 
 
 class VerifyCodeStatus(str, Enum):

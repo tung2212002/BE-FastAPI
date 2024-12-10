@@ -59,12 +59,6 @@ class JobApprovalRequest(Base):
     # employment_type = Column(Enum(JobType), index=True)
     # gender_requirement = Column(Enum(Gender), index=True)
     # deadline = Column(Date, nullable=True, index=True)
-    # is_featured = Column(Boolean, nullable=True)
-    # is_highlight = Column(Boolean, nullable=True)
-    # is_urgent = Column(Boolean, nullable=True)
-    # is_paid_featured = Column(Boolean, nullable=True)
-    # is_bg_featured = Column(Boolean, nullable=True)
-    # is_job_flash = Column(Boolean, nullable=True)
     # working_time_text = Column(Text, nullable=True)
 
     # must_have_skills = Column(JSON, nullable=True)
@@ -78,4 +72,3 @@ class JobApprovalRequest(Base):
         back_populates="job_approval_request",
         uselist=False,
     )
-    approval_log = relationship("ApprovalLog", back_populates="job_approval_request")
