@@ -12,7 +12,7 @@ class JobApprovalLogHelper:
     def create(
         self,
         db: Session,
-        id: int,
+        job_id: int,
         previous_status: str,
         new_status: str,
         admin_id: int,
@@ -20,7 +20,7 @@ class JobApprovalLogHelper:
     ) -> ApprovalLog:
         job_approval_log = JobApprovalLogCreate(
             **{
-                "job_approval_request_id": id,
+                "job_id": job_id,
                 "previous_status": previous_status,
                 "new_status": new_status,
                 "admin_id": admin_id,

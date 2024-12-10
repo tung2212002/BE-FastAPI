@@ -30,7 +30,7 @@ from app.model import (
     CVApplication,
     JobApprovalRequest,
     Campaign,
-    JobApprovalLog,
+    ApprovalLog,
     Company,
 )
 from app.core.working_times.working_times_helper import working_times_helper
@@ -238,13 +238,14 @@ class JobHepler:
         job_approval_request: JobApprovalRequest,
     ):
         job_data_in = JobUpdate(**job_data.model_dump())
-        jobCRUD.update(db, obj_in=job_data_in)
+        jobCRUD.update(db, db_obj=job, obj_in=job_data_in)
         self.update_job_fields(db, job.id, job_data)
         job_approval_requestCRUD.update_job(db, job_approval_request)
 
     def handle_rejected_job(self, db: Session, job: Job, job_data: JobUpdateRequest):
-        job_data_in = JobUpdate(**job_data.model_dump(), status=JobStatus.PENDING)
-        jobCRUD.update(db, obj_in=job_data_in)
+        job_data_in = JobUpdate(**job_data.model_dump())
+        job_data_in.status = JobStatus.PENDING
+        jobCRUD.update(db, db_obj=job, obj_in=job_data_in)
         self.update_job_fields(db, job.id, job_data)
         self.create_job_approval_request(
             db, job, job_data, status=JobApprovalStatus.PENDING
@@ -263,7 +264,7 @@ class JobHepler:
             )
         else:
             job_data_in = JobUpdate(**job_data.model_dump(), status=JobStatus.PENDING)
-            jobCRUD.update(db, obj_in=job_data_in)
+            jobCRUD.update(db, db_obj=job, obj_in=job_data_in)
             self.update_job_fields(db, job.id, job_data)
 
     def update_job_fields(self, db: Session, job_id: int, job_data: JobUpdateRequest):
@@ -281,13 +282,13 @@ class JobHepler:
         self,
         db: Session,
         job: Job,
-        job_data: JobUpdateRequest,
+        job_data: JobUpdateRequest = None,
         status=JobApprovalStatus.PENDING,
     ):
         job_approval_request_in = JobApprovalRequestCreate(
             job_id=job.id,
             status=status,
-            data=job_data.model_dump(),
+            data=job_data.model_dump() if job_data else None,
         )
         job_approval_requestCRUD.create(db, obj_in=job_approval_request_in)
 

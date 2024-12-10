@@ -7,12 +7,12 @@ from app.schema.job_approval_log import JobApprovalLogCreate
 
 
 class CRUDJobLogRequest:
-    def get(self, db: Session, job_approval_request_id: int) -> Job:
-        return db.query(Job).filter(Job.id == job_approval_request_id).first()
+    def get(self, db: Session, id: int) -> ApprovalLog:
+        return db.query(ApprovalLog).filter(ApprovalLog.id == id).first()
 
     def create(self, db: Session, obj_in: JobApprovalLogCreate) -> ApprovalLog:
         db_obj = ApprovalLog(
-            job_approval_request_id=obj_in.job_approval_request_id,
+            job_id=obj_in.job_id,
             admin_id=obj_in.admin_id,
             previous_status=obj_in.previous_status,
             new_status=obj_in.new_status,
