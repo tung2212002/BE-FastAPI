@@ -14,10 +14,12 @@ from app.schema.job import (
     JobSearchByBusiness,
     JobCount,
     JobItemResponse,
+    JobUpdateStatusRequest,
 )
 from app.schema.job_approval_request import (
     JobApprovalRequestCreate,
     JobApprovalRequestResponse,
+    JobApprovalCreate,
 )
 from app.schema.job_statistics import JobCountBySalary
 from app.crud import (
@@ -36,8 +38,10 @@ from app.hepler.enum import (
     JobApprovalStatus,
     CampaignStatus,
     RequestApproval,
+    JobLogStatus,
 )
 from app.core.job_approval_requests import job_approval_request_helper
+from app.core.job_approval_log.job_approval_log_helper import job_approval_log_helper
 from app.storage.cache.job_cache_service import job_cache_service
 from app.hepler.common import CommonHelper
 from app.model import (
@@ -60,7 +64,6 @@ from app.core.cv_applications.cv_applications_helper import cv_applications_help
 from app.core.job_approval_requests.job_approval_request_helper import (
     job_approval_request_helper,
 )
-
 from app.common.exception import CustomException
 from app.common.response import CustomResponse
 
@@ -587,6 +590,7 @@ class JobService:
         self, db: Session, redis: Redis, data: dict, current_user: Account
     ):
         job_data = JobUpdateRequest(**data)
+        job_in = JobUpdate(**job_data.model_dump())
 
         job: Job = jobCRUD.get(db, job_data.job_id)
         if not job:
@@ -629,19 +633,14 @@ class JobService:
         )
 
         if job.status == JobStatus.PENDING:
+            jobCRUD.update(db, db_obj=job, obj_in=job_in)
             job_helper.update_job_fields(db, job.id, job_data)
 
             job_approval_requestCRUD.update_job(db, job_approval_request)
         elif job.status == JobStatus.REJECTED:
             job_helper.handle_rejected_job(db, job, job_data)
-        elif job.status == JobStatus.BANNED:
-            return CustomResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                msg="Job is banned",
-            )
         elif job.status == JobStatus.STOPPED:
-            if job_approval_request.status == JobApprovalStatus.APPROVED:
-                job_helper.handle_stopped_job(db, job, job_data, job_approval_request)
+            job_helper.handle_stopped_job(db, job, job_data, job_approval_request)
         else:
             job_helper.create_job_approval_request(
                 db, job, job_data, JobApprovalStatus.PENDING
@@ -656,7 +655,57 @@ class JobService:
             msg="Request update job success", status=status.HTTP_200_OK
         )
 
-    async def delete(self, db: Session, job_id: int, current_user: Account):
+    async def update_status(
+        self, db: Session, redis: Redis, data: dict, current_user: Account
+    ):
+        job_data = JobUpdateStatusRequest(**data)
+        job: Job = jobCRUD.get(db, job_data.id)
+        if not job:
+            raise CustomException(
+                status_code=status.HTTP_404_NOT_FOUND, msg="Job not found"
+            )
+
+        campaign: Campaign = job.campaign
+        company: Company = companyCRUD.get_by_business_id(db, current_user.id)
+
+        if not job_helper.has_permission(
+            job,
+            campaign,
+            company,
+            current_user,
+        ):
+            raise CustomException(
+                status_code=status.HTTP_403_FORBIDDEN, msg="Permission denied"
+            )
+
+        if job_data.status == JobStatus.PUBLISHED:
+            job_approval_request_in = JobApprovalRequestCreate(
+                job_id=job.id,
+                status=JobApprovalStatus.APPROVED,
+            )
+            job_approval_requestCRUD.create(
+                db,
+                obj_in=job_approval_request_in,
+            )
+            jobCRUD.update_status_job(db, job, JobStatus.PENDING)
+        elif job_data.status == JobStatus.STOPPED:
+            jobCRUD.update_status_job(db, job, JobStatus.STOPPED)
+            job_approval_requestCRUD.update_status_by_job_id(
+                db, job.id, JobStatus.STOPPED
+            )
+
+        try:
+            await job_cache_service.delete_job_info(redis, job.id)
+        except Exception as e:
+            print(e)
+
+        return CustomResponse(
+            msg="Update job status success", status=status.HTTP_200_OK
+        )
+
+    async def delete(
+        self, db: Session, redis: Redis, job_id: int, current_user: Account
+    ):
         job = jobCRUD.get(db, job_id)
         company = companyCRUD.get_by_business_id(db, current_user.id)
         campaign: Campaign = job.campaign
@@ -672,6 +721,11 @@ class JobService:
             )
 
         response = jobCRUD.remove(db, id=job_id)
+
+        try:
+            await job_cache_service.delete_job_info(redis, job_id)
+        except Exception as e:
+            print(e)
 
         return CustomResponse(
             msg="Delete job success", status=status.HTTP_204_NO_CONTENT
