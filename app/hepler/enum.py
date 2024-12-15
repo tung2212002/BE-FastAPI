@@ -54,8 +54,17 @@ class JobStatus(str, Enum):
     PENDING = "pending"
     PUBLISHED = "published"
     REJECTED = "rejected"
-    BANNED = "banned"
     STOPPED = "stopped"
+    EXPIRED = "expired"
+
+
+class JobLogStatus(str, Enum):
+    PUBLISHED = "published"
+    REJECTED = "rejected"
+    STOPPED = "stopped"
+    EXPRIED = "expried"
+    APPROVED = "approved"
+    PENDING = "pending"
 
 
 class JobType(str, Enum):
@@ -79,6 +88,7 @@ class RequestApproval(str, Enum):
 class AdminJobApprovalStatus(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
+    STOPPED = "stopped"
 
 
 class SalaryType(str, Enum):
