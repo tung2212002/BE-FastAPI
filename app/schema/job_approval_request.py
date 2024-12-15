@@ -126,11 +126,12 @@ class JobApprovalRequestResponse(BaseModel):
     is_job_flash: Optional[bool] = None
     working_time_text: Optional[str] = None
     quantity: Optional[int] = None
-    working_times: Optional[Any] = None
-    categories: Optional[Any] = None
-    work_locations: Optional[Any] = None
-    must_have_skills: Optional[Any] = None
-    should_have_skills: Optional[Any] = None
+    working_times: Optional[Any] = []
+    categories: Optional[Any] = []
+    work_locations: Optional[Any] = []
+    must_have_skills: Optional[Any] = []
+    should_have_skills: Optional[Any] = []
+    locations: Optional[Any] = []
     job_experience_id: Optional[int] = None
     job_position_id: Optional[int] = None
     job_id: Optional[int] = None

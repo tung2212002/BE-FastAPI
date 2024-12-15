@@ -15,6 +15,7 @@ from app.hepler.enum import (
     AdminJobApprovalStatus,
     MessageType,
     CreateMessageType,
+    JobStatus,
 )
 from app.hepler.common import CommonHelper
 
@@ -294,7 +295,11 @@ class SchemaValidator:
 
     @staticmethod
     def validate_status_update_job(v):
-        if v not in [AdminJobApprovalStatus.APPROVED, AdminJobApprovalStatus.REJECTED]:
+        if v not in [
+            AdminJobApprovalStatus.APPROVED,
+            AdminJobApprovalStatus.REJECTED,
+            AdminJobApprovalStatus.STOPPED,
+        ]:
             raise ValueError("Invalid status")
         return v
 
@@ -344,4 +349,10 @@ class SchemaValidator:
             "attachments" not in values or len(values["attachments"]) == 0
         ):
             raise ValueError("attachments is required")
+        return v
+
+    @staticmethod
+    def validate_job_status(v):
+        if v not in JobStatus.__members__.values():
+            raise ValueError("Invalid job status")
         return v

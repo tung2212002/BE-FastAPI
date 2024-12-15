@@ -8,6 +8,7 @@ accept_content = ["json"]
 task_default_queue = "default"
 task_routes = {
     "app.tasks.data_statistics.*": {"queue": "default"},
+    "app.tasks.job_scan.*": {"queue": "default"},
 }
 
 task_retry_max = 3

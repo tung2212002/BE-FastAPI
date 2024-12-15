@@ -102,5 +102,21 @@ class CRUDJobApprovalRequest(
         db.refresh(job_approval_request)
         return job_approval_request
 
+    def remove_pending_by_job_id(self, db, job_id: int):
+        db.query(self.model).filter(
+            self.model.job_id == job_id,
+            self.model.status == JobApprovalStatus.PENDING,
+        ).delete()
+        db.commit()
+
+    def update_status_by_job_id(
+        self, db, job_id: int, status: JobApprovalStatus
+    ) -> JobApprovalRequest:
+        job_approval_request = self.get_pending_by_job_id(db, job_id)
+        if job_approval_request:
+            job_approval_request.status = status
+            return self.update_job(db, job_approval_request)
+        return None
+
 
 job_approval_request = CRUDJobApprovalRequest(JobApprovalRequest)

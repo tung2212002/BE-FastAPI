@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, Query, Path, Body
 from sqlalchemy.orm import Session
+from redis import Redis
 
+from app.storage.redis import get_redis
 from app.db.base import get_db
 from app.core.campaign.campaign_service import campaign_service
 from app.core.auth.user_manager_service import user_manager_service
-from app.hepler.enum import FilterCampaign, OrderType, SortBy
+from app.hepler.enum import FilterCampaign, OrderType, SortBy, CampaignStatus
 
 router = APIRouter()
 
@@ -103,6 +105,39 @@ async def create_campaign(
 
     """
     return await campaign_service.create(db, data, current_user)
+
+
+@router.put("/{id}/status", summary="Update campaign status.")
+async def update_campaign_status(
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+    current_user=Depends(user_manager_service.get_current_business),
+    id: int = Path(description="The campaign id.", example=1),
+    data: dict = Body(
+        ...,
+        description="The campaign status data.",
+        example={"status": CampaignStatus.OPEN},
+    ),
+):
+    """
+    Update campaign status.
+
+    This endpoint allows updating a campaign status.
+
+    Parameters:
+    - id (int): The campaign id.
+    - status (bool): The campaign status.
+
+    Returns:
+    - status_code (200): The campaign has been updated successfully.
+    - status_code (400): The request is invalid.
+    - status_code (403): The permission is denied.
+    - status_code (404): The campaign is not found.
+
+    """
+    return await campaign_service.update_status(
+        db, redis, {**data, "id": id}, current_user
+    )
 
 
 @router.put("/{id}", summary="Update campaign.")

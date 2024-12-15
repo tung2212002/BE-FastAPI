@@ -17,6 +17,8 @@ from app.schema.cv_application import (
     CVApplicationUserFilter,
     CVApplicationUserFilterCount,
     CVApplicationUserItemResponse,
+    CVApplicationBusinessFilter,
+    CVApplicationBusinessFilterCount,
 )
 from app.schema.file import FileInfo
 from app.common.exception import CustomException
@@ -73,6 +75,30 @@ class CVApplicationsService:
         )
 
         return CustomResponse(data=response)
+
+    async def get_by_business(
+        self, db: Session, redis: Redis, data: dict, current_user: Account
+    ) -> CustomResponse:
+        page = CVApplicationBusinessFilter(**data)
+        count_page = CVApplicationBusinessFilterCount(**data)
+
+        count: int = cv_applicationCRUD.count_by_business_id(
+            db, business_id=current_user.id, **count_page.model_dump()
+        )
+
+        if count < page.skip:
+            return CustomResponse(data={"cv": [], "count": count})
+
+        cv_applications: List[CVApplication] = cv_applicationCRUD.get_by_business_id(
+            db, business_id=current_user.id, **page.model_dump()
+        )
+
+        cv_applications_response: List[CVApplicationUserItemResponse] = [
+            await cv_applications_helper.get_full_info(db, cv_application)
+            for cv_application in cv_applications
+        ]
+
+        return CustomResponse(data={"cv": cv_applications_response, "count": count})
 
     async def create(
         self, db: Session, redis: Redis, data: dict, current_user: Account

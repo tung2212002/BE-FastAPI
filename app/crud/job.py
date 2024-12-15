@@ -395,5 +395,22 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
             .scalar()
         )
 
+    def update_expired_job(self, db: Session):
+        return (
+            db.query(self.model)
+            .filter(
+                self.model.deadline < func.now(),
+                self.model.status == JobStatus.PUBLISHED,
+            )
+            .update({"status": JobStatus.EXPIRED}, synchronize_session=False)
+        )
+
+    def update_status_job(self, db: Session, job: Job, status: JobStatus):
+        job.status = status
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        return job
+
 
 job = CRUDJob(Job)

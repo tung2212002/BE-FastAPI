@@ -311,9 +311,47 @@ async def Update_job(
     return await job_service.update(db, redis, {**data, "job_id": job_id}, current_user)
 
 
+@router.put("/{job_id}/status", summary="Update job status.")
+async def update_job_status(
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+    current_user=Depends(user_manager_service.get_current_business_admin_superuser),
+    job_id: int = Path(
+        ...,
+        description="The job id.",
+        example=1,
+    ),
+    data: dict = Body(
+        ...,
+        description="The job status data.",
+        example={"status": JobStatus.PUBLISHED},
+    ),
+):
+    """
+    Update job status.
+
+    This endpoint allows updating a job status.
+
+    Parameters:
+    - job_id (int): The job id.
+    - status (bool): The job status.
+
+    Returns:
+    - status_code (200): The job has been updated successfully.
+    - status_code (400): The request is invalid.
+    - status_code (403): The permission is denied.
+    - status_code (404): The job is not found.
+
+    """
+    return await job_service.update_status(
+        db, redis, {**data, "id": job_id}, current_user
+    )
+
+
 @router.delete("/{job_id}", summary="Delete a job.")
 async def delete_job(
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     current_user=Depends(user_manager_service.get_current_business_admin_superuser),
     job_id: int = Path(
         ...,
@@ -336,4 +374,4 @@ async def delete_job(
     - status_code (403): The permission is denied.
 
     """
-    return await job_service.delete(db, job_id, current_user)
+    return await job_service.delete(db, redis, job_id, current_user)

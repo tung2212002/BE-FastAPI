@@ -93,7 +93,7 @@ class CampaignHelper:
             ),
             lastest_approval_request=(
                 JobApprovalRequestItemResponse(
-                    **job_approval_requestCRUD.get_last_by_job_id(db, job.id).__dict__
+                    **(job_approval_requestCRUD.get_last_by_job_id(db, job.id).__dict__)
                 )
                 if job
                 else None

@@ -370,5 +370,13 @@ class CRUDCampaign(CRUDBase[Campaign, CampaignCreate, CampaignUpdate]):
         db.refresh(campaign)
         return campaign
 
+    def update_status(
+        self, db: Session, campaign: Campaign, status: CampaignStatus
+    ) -> Campaign:
+        campaign.status = status
+        db.commit()
+        db.refresh(campaign)
+        return campaign
+
 
 campaign = CRUDCampaign(Campaign)

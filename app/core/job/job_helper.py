@@ -258,14 +258,9 @@ class JobHepler:
         job_data: JobUpdateRequest,
         job_approval_request: JobApprovalRequest,
     ):
-        if job_approval_request.status == JobApprovalStatus.APPROVED:
-            self.create_job_approval_request(
-                db, job, job_data, status=JobApprovalStatus.PENDING
-            )
-        else:
-            job_data_in = JobUpdate(**job_data.model_dump(), status=JobStatus.PENDING)
-            jobCRUD.update(db, db_obj=job, obj_in=job_data_in)
-            self.update_job_fields(db, job.id, job_data)
+        job_data_in = JobUpdate(**job_data.model_dump(), status=job.status)
+        jobCRUD.update(db, db_obj=job, obj_in=job_data_in)
+        self.update_job_fields(db, job.id, job_data)
 
     def update_job_fields(self, db: Session, job_id: int, job_data: JobUpdateRequest):
         self.update_fields(
@@ -285,6 +280,8 @@ class JobHepler:
         job_data: JobUpdateRequest = None,
         status=JobApprovalStatus.PENDING,
     ):
+        print("=======", job_data)
+        job_approval_requestCRUD.remove_pending_by_job_id(db, job.id)
         job_approval_request_in = JobApprovalRequestCreate(
             job_id=job.id,
             status=status,
