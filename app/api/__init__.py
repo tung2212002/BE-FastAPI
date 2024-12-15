@@ -8,6 +8,7 @@ from app.api.api_v1.endpoint.business import (
     business_company,
     business_job,
     verify,
+    business_cv_applications,
 )
 
 from app.api.api_v1.endpoint.config import (
@@ -53,6 +54,11 @@ api_router.include_router(
 )
 api_router.include_router(
     business_campaign.router, prefix="/business/campaign", tags=["business_campaign"]
+)
+api_router.include_router(
+    business_cv_applications.router,
+    prefix="/business/cv_applications",
+    tags=["business_cv_applications"],
 )
 api_router.include_router(
     business_admin.router, prefix="/admin", tags=["business_admin"]

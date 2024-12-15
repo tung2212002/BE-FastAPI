@@ -38,6 +38,23 @@ class CVApplicationUserFilterCount(BaseModel):
     model_config = ConfigDict(from_attribute=True, extra="ignore")
 
 
+class CVApplicationBusinessFilterCount(BaseModel):
+    status: Optional[CVApplicationStatus] = None
+    campaign_id: Optional[int] = None
+    keyword: Optional[str] = None
+
+    model_config = ConfigDict(from_attribute=True, extra="ignore")
+
+
+class CVApplicationBusinessFilter(Pagination):
+    status: Optional[CVApplicationStatus] = None
+    campaign_id: Optional[int] = None
+    keyword: Optional[str] = None
+
+    def get_key(self, campaign_id: int) -> str:
+        return f"{campaign_id}_{self.status}"
+
+
 class CVApplicationCreateRequest(BaseModel):
     job_id: int
     cv: UploadFile
