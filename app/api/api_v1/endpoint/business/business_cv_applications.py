@@ -51,7 +51,7 @@ async def get_cv_applications(
     """
     args = locals()
 
-    return await cv_applications_service.get(db, redis, args, current_user)
+    return await cv_applications_service.get_by_business(db, redis, args, current_user)
 
 
 @router.get("/{id}", summary="Get cv application by id.")
@@ -77,7 +77,7 @@ async def get_cv_application_by_id(
     return await cv_applications_service.get_by_id(db, id, current_user)
 
 
-@router.patch("/{cv_application_id}", summary="Update cv application by id.")
+@router.put("/{cv_application_id}", summary="Update cv application by id.")
 async def update_cv_application_by_id(
     db: Session = Depends(get_db),
     current_user=Depends(user_manager_service.get_current_business),

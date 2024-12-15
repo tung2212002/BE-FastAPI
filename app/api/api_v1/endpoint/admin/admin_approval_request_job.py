@@ -159,5 +159,5 @@ async def approve_job_request_by_id(
         db,
         redis,
         current_user=current_user,
-        data={"job_approval_request_id": job_approval_request_id, **data},
+        data={"id": job_approval_request_id, **data},
     )

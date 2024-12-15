@@ -111,6 +111,15 @@ class CountGetListStatusPagination(BaseModel):
     company_id: Optional[int] = None
 
 
+class CampaignUpdateStatusRequest(BaseModel):
+    status: str
+    id: int
+
+    @validator("status")
+    def validate_status(cls, v):
+        return SchemaValidator.validate_campaign_status(v)
+
+
 # schema
 class CampaignCreate(CampaignBase):
     business_id: int

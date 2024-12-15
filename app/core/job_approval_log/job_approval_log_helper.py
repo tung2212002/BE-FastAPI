@@ -6,6 +6,7 @@ from app.crud import (
 )
 from app.schema.job_approval_log import JobApprovalLogCreate, JobApprovalLogResponse
 from app.model import ApprovalLog
+from app.hepler.enum import JobLogStatus
 
 
 class JobApprovalLogHelper:
@@ -13,8 +14,8 @@ class JobApprovalLogHelper:
         self,
         db: Session,
         job_id: int,
-        previous_status: str,
-        new_status: str,
+        previous_status: JobLogStatus,
+        new_status: JobLogStatus,
         admin_id: int,
         reason: str,
     ) -> ApprovalLog:
@@ -27,6 +28,7 @@ class JobApprovalLogHelper:
                 "reason": reason,
             }
         )
+        print(job_approval_log)
         job_approval_log: ApprovalLog = job_approval_logCRUD.create(
             db, obj_in=job_approval_log
         )

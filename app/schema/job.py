@@ -326,6 +326,15 @@ class JobCreateRequest(JobBase):
         return v
 
 
+class JobUpdateStatusRequest(BaseModel):
+    status: JobStatus
+    id: int
+
+    @validator("status")
+    def validate_status(cls, v):
+        return SchemaValidator.validate_job_status(v)
+
+
 # schema
 
 
