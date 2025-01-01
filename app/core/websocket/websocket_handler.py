@@ -7,8 +7,6 @@ from app.core.websocket.websocket_manager import WebsocketManager
 from app.model import (
     Message,
     MessageAttachment,
-    MessageReaction,
-    PinnedMessage,
     ConversationMember,
     Account,
     Conversation,
@@ -24,8 +22,6 @@ from app.schema.websocket import (
 from app.schema.account import AccountBasicResponse
 from app.schema.message import MessageCreate, MessageUpdate
 from app.schema.message_attachment import MessageAttachmentCreate
-from app.schema.message_reaction import MessageReactionCreate
-from app.schema.pinned_message import PinnedMessageCreate
 from app.schema.conversation_member import ConversationMemberCreate
 from app.schema.conversation import (
     ConversationCreate,
@@ -38,8 +34,6 @@ from app.schema.file import FileInfo
 from app.crud import (
     message as messageCRUD,
     message_attachment as message_attachmentCRUD,
-    message_reaction as message_reactionCRUD,
-    pinned_message as pinned_messageCRUD,
     conversation_member as conversation_memberCRUD,
     conversation as conversationCRUD,
     account as accountCRUD,

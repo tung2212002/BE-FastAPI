@@ -30,8 +30,6 @@ from .cv_applications import cv_applications
 from .conversation import conversation
 from .message import message
 from .conversation_member import conversation_member
-from .message_reaction import message_reaction
 from .message_attachment import message_attachment
-from .pinned_message import pinned_message
 from .contact import contact
 from .work_market import work_market

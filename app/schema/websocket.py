@@ -5,7 +5,6 @@ from datetime import datetime
 from app.hepler.enum import WebsocketActionType
 from app.hepler.enum import MessageType, ConversationType, CreateMessageType
 from app.schema.account import AccountBasicResponse
-from app.schema.message_reaction import MessageReactionResponse
 from app.schema.message_attachment import AttachmentResponse
 from app.hepler.schema_validator import SchemaValidator
 
@@ -46,7 +45,6 @@ class ResponseMessageSchema(BaseSchema):
     is_pinned: Optional[bool] = False
     parent_id: Optional[int] = None
     parent: Optional[dict] = None
-    reaction: Optional[MessageReactionResponse] = None
     attachments: Optional[List[AttachmentResponse]] = None
     user: AccountBasicResponse
 

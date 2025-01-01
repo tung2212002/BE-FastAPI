@@ -16,9 +16,6 @@ class User(Base):
 
     user_job_save = relationship("UserJobSave", back_populates="user")
     cv_applications = relationship("CVApplication", back_populates="user")
-    user_job_requirement = relationship(
-        "UserJobRequirement", back_populates="user", uselist=False
-    )
     job_reports = relationship("JobReport", back_populates="user")
     social_network = relationship("SocialNetwork", back_populates="user")
     account = relationship("Account", back_populates="user")

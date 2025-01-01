@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import List
 
 from app.hepler.enum import MessageType
-from app.schema.message_reaction import MessageReactionResponse
 from app.schema.user import UserBasicResponse
 from app.schema.account import AccountBasicResponse
 from app.schema.message_attachment import AttachmentResponse
@@ -63,7 +62,6 @@ class MessageResponse(BaseModel):
     parent: Optional[dict] = None
     attachments: Optional[List[AttachmentResponse]] = None
     is_pinned: bool
-    reaction: Optional[MessageReactionResponse] = None
 
     model_config = ConfigDict(from_attribute=True, extra="ignore")
 

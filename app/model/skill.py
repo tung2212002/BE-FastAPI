@@ -12,8 +12,3 @@ class Skill(Base):
         "JobSkill",
         back_populates="skill",
     )
-
-    user_job_requirement_skill = relationship(
-        "UserJobRequirementSkill",
-        back_populates="skill",
-    )

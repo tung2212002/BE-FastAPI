@@ -18,11 +18,6 @@ from .group_position import GroupPosition
 from .job_position import JobPosition
 from .label_company import LabelCompany
 from .job_salary import JobSalary
-from .user_job_requirement_category import UserJobRequirementCategory
-from .user_job_requirement_location import UserJobRequirementLocation
-from .user_job_requirement_position import UserJobRequirementPosition
-from .user_job_requirement_skill import UserJobRequirementSkill
-from .user_job_requirement import UserJobRequirement
 from .company import Company
 from .job import Job
 from .user_job_save import UserJobSave
@@ -44,6 +39,4 @@ from .work_location import WorkLocation
 from .conversation import Conversation
 from .message import Message
 from .conversation_member import ConversationMember
-from .message_reaction import MessageReaction
 from .message_attachment import MessageAttachment
-from .pinned_message import PinnedMessage

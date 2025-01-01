@@ -13,8 +13,3 @@ class Category(Base):
     job_category_secondary = relationship(
         "JobCategory", back_populates="category", overlaps="categories"
     )
-    user_job_requirement_category = relationship(
-        "UserJobRequirementCategory",
-        back_populates="category",
-        overlaps="categories",
-    )

@@ -9,7 +9,4 @@ class JobExperience(Base):
     from_year = Column(Integer, default=0, nullable=False)
     to_year = Column(Integer, default=0, nullable=False)
 
-    user_job_requirement = relationship(
-        "UserJobRequirement", back_populates="job_experience"
-    )
     job = relationship("Job", back_populates="job_experience")

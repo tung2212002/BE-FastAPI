@@ -39,15 +39,3 @@ class Account(Base):
     messages = relationship(
         "Message", back_populates="account", lazy=True, passive_deletes=True
     )
-    reactions = relationship(
-        "MessageReaction",
-        back_populates="account",
-        lazy=True,
-        passive_deletes=True,
-    )
-    pinned_messages = relationship(
-        "PinnedMessage",
-        back_populates="account",
-        lazy=True,
-        passive_deletes=True,
-    )

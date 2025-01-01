@@ -32,12 +32,6 @@ class Conversation(Base):
     messages = relationship(
         "Message", back_populates="conversation", lazy=True, passive_deletes=True
     )
-    pinned_messages = relationship(
-        "PinnedMessage",
-        back_populates="conversation",
-        lazy=True,
-        passive_deletes=True,
-    )
     conversation_member_secondary = relationship(
         "ConversationMember",
         back_populates="conversation",
